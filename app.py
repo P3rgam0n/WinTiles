@@ -9,13 +9,137 @@ from tkinter import colorchooser, messagebox, ttk
 import webbrowser
 
 
-APP_TITLE = "Kafelki - Ulatwienie Pracy"
 APP_CONFIG_DIR_NAME = "Kafelki"
 COLUMNS = 4
 TILE_WIDTH = 18
 TILE_HEIGHT = 4
 DEFAULT_CHROME_EXE = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 DEFAULT_TILE_COLOR = "#1f6feb"
+
+LANG_EN = "en"
+LANG_PL = "pl"
+
+LANG_NAMES = {
+    LANG_EN: "English",
+    LANG_PL: "Polski",
+}
+LANG_CODES = {
+    "English": LANG_EN,
+    "Polski": LANG_PL,
+}
+
+TRANSLATIONS = {
+    LANG_EN: {
+        "app_title": "Tiles - Work Helper",
+        "add_tile": "+ Add Tile",
+        "save": "Save",
+        "always_on_top": "Always on top",
+        "dark_mode": "Dark mode",
+        "language": "Language:",
+        "hint_mouse": "LMB: run | RMB: edit/delete",
+        "edit": "Edit",
+        "delete": "Delete",
+        "edit_tile_title": "Edit Tile",
+        "add_tile_title": "Add Tile",
+        "name": "Name:",
+        "action_type": "Action type:",
+        "target": "Target / command:",
+        "color": "Tile color:",
+        "description": "Description (optional):",
+        "choose_color": "Choose...",
+        "cancel": "Cancel",
+        "new_tile_default_name": "New Tile",
+        "hint_dialog": (
+            "url: https://...\n"
+            "path: C:\\folder\\...\n"
+            "exe: C:\\Program Files\\App\\app.exe\n"
+            "ps1: C:\\scripts\\task.ps1 (path only)\n"
+            "python: C:\\scripts\\task.py (path only)\n"
+            "chrome_profile: C:\\...\\Google\\Chrome\\User Data\\Default\n"
+            "command: any command, e.g. powershell -File C:\\script.ps1"
+        ),
+        "error": "Error",
+        "error_name_empty": "Tile name cannot be empty.",
+        "error_action_type": "Invalid action type.",
+        "error_target_empty": "Field 'Target / command' cannot be empty.",
+        "error_color": "Invalid color format (e.g. #1f6feb).",
+        "saved_title": "Saved",
+        "saved_msg": "Settings saved in:\n{}",
+        "save_error_title": "Save Error",
+        "delete_title": "Delete Tile",
+        "delete_confirm": "Are you sure you want to delete '{}'?",
+        "run_error_title": "Execution Error",
+        "path_not_found": "Path does not exist:\n{}",
+        "exe_not_found": "EXE file does not exist:\n{}",
+        "path_is_dir": "Specified path is a directory, not an EXE file:\n{}",
+        "script_not_found": "Script does not exist:\n{}",
+        "chrome_profile_not_found": "Chrome profile does not exist:\n{}",
+        "chrome_exe_not_found": (
+            "chrome.exe not found.\n"
+            "Check Google Chrome installation (standard path)."
+        ),
+        "chrome_profile_invalid": (
+            "Invalid Chrome profile path.\n"
+            "Provide e.g.: C:\\Users\\<user>\\AppData\\Local\\Google\\Chrome\\User Data\\Default"
+        ),
+        "unknown_action": "Unknown action type: {}",
+    },
+    LANG_PL: {
+        "app_title": "Kafelki - Ułatwienie Pracy",
+        "add_tile": "+ Dodaj kafelek",
+        "save": "Zapisz",
+        "always_on_top": "Zawsze na wierzchu",
+        "dark_mode": "Tryb ciemny",
+        "language": "Język:",
+        "hint_mouse": "LPM: uruchom | PPM: edytuj/usuń",
+        "edit": "Edytuj",
+        "delete": "Usuń",
+        "edit_tile_title": "Edycja kafelka",
+        "add_tile_title": "Dodaj kafelek",
+        "name": "Nazwa:",
+        "action_type": "Typ akcji:",
+        "target": "Cel / komenda:",
+        "color": "Kolor kafelka:",
+        "description": "Opis (opcjonalnie):",
+        "choose_color": "Wybierz...",
+        "cancel": "Anuluj",
+        "new_tile_default_name": "Nowy kafelek",
+        "hint_dialog": (
+            "url: https://...\n"
+            "path: C:\\folder\\...\n"
+            "exe: C:\\Program Files\\App\\app.exe\n"
+            "ps1: C:\\skrypty\\zadanie.ps1 (tylko sciezka)\n"
+            "python: C:\\skrypty\\zadanie.py (tylko sciezka)\n"
+            "chrome_profile: C:\\...\\Google\\Chrome\\User Data\\Default\n"
+            "command: dowolne polecenie, np. powershell -File C:\\skrypt.ps1"
+        ),
+        "error": "Błąd",
+        "error_name_empty": "Nazwa kafelka nie może być pusta.",
+        "error_action_type": "Nieprawidłowy typ akcji.",
+        "error_target_empty": "Pole 'Cel / komenda' nie może być puste.",
+        "error_color": "Nieprawidłowy kolor (np. #1f6feb).",
+        "saved_title": "Zapisano",
+        "saved_msg": "Ustawienia zapisane w:\n{}",
+        "save_error_title": "Błąd zapisu",
+        "delete_title": "Usuń kafelek",
+        "delete_confirm": "Czy na pewno usunąć '{}'?",
+        "run_error_title": "Błąd uruchamiania",
+        "path_not_found": "Ścieżka nie istnieje:\n{}",
+        "exe_not_found": "Plik EXE nie istnieje:\n{}",
+        "path_is_dir": "Podana ścieżka jest folderem, nie plikiem EXE:\n{}",
+        "script_not_found": "Skrypt nie istnieje:\n{}",
+        "chrome_profile_not_found": "Profil Chrome nie istnieje:\n{}",
+        "chrome_exe_not_found": (
+            "Nie znaleziono chrome.exe.\n"
+            "Sprawdź instalację Google Chrome (standardowa ścieżka)."
+        ),
+        "chrome_profile_invalid": (
+            "Nieprawidłowa ścieżka profilu Chrome.\n"
+            "Podaj np.: C:\\Users\\<user>\\AppData\\Local\\Google\\Chrome\\User Data\\Default"
+        ),
+        "unknown_action": "Nieznany typ akcji: {}",
+    },
+}
 
 
 def _primary_config_file():
@@ -48,30 +172,122 @@ DEFAULT_TILES = [
         "name": "Google",
         "action_type": "url",
         "target": "https://www.google.com",
+        "description": "Google Search Engine",
     },
     {
         "name": "Pulpit",
         "action_type": "path",
         "target": str(Path.home() / "Desktop"),
+        "description": "User Desktop Folder",
     },
 ]
 
 
+class Tooltip:
+    def __init__(self, widget, text, dark_mode=False):
+        self.widget = widget
+        self.text = text.strip() if text else ""
+        self.dark_mode = dark_mode
+        self.tip_window = None
+        self.after_id = None
+        if self.text:
+            self.widget.bind("<Enter>", self.schedule, add="+")
+            self.widget.bind("<Leave>", self.hide, add="+")
+            self.widget.bind("<ButtonPress>", self.hide, add="+")
+
+    def schedule(self, event=None):
+        self.unschedule()
+        if not self.text:
+            return
+        self.after_id = self.widget.after(350, self.show)
+
+    def unschedule(self):
+        if self.after_id:
+            self.widget.after_cancel(self.after_id)
+            self.after_id = None
+
+    def show(self, event=None):
+        if self.tip_window or not self.text:
+            return
+
+        try:
+            x = self.widget.winfo_rootx() + 10
+            y = self.widget.winfo_rooty() + self.widget.winfo_height() + 5
+        except tk.TclError:
+            return
+
+        screen_width = self.widget.winfo_screenwidth()
+        screen_height = self.widget.winfo_screenheight()
+
+        self.tip_window = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_attributes("-topmost", True)
+
+        bg_color = "#2b2b2b" if self.dark_mode else "#ffffe1"
+        fg_color = "#f0f0f0" if self.dark_mode else "#000000"
+        border_color = "#555555" if self.dark_mode else "#b0b0b0"
+
+        frame = tk.Frame(tw, background=border_color, bd=1)
+        frame.pack(fill="both", expand=True)
+
+        label = tk.Label(
+            frame,
+            text=self.text,
+            justify="left",
+            background=bg_color,
+            foreground=fg_color,
+            wraplength=260,
+            padx=8,
+            pady=4,
+            font=("Segoe UI", 9),
+        )
+        label.pack()
+
+        tw.update_idletasks()
+        tip_w = tw.winfo_width()
+        tip_h = tw.winfo_height()
+
+        if x + tip_w > screen_width - 10:
+            x = screen_width - tip_w - 10
+        if y + tip_h > screen_height - 10:
+            y = self.widget.winfo_rooty() - tip_h - 5
+
+        tw.wm_geometry(f"+{x}+{y}")
+
+    def hide(self, event=None):
+        self.unschedule()
+        if self.tip_window:
+            try:
+                self.tip_window.destroy()
+            except tk.TclError:
+                pass
+            self.tip_window = None
+
+
 class EditTileDialog(tk.Toplevel):
-    def __init__(self, master, tile=None):
+    def __init__(self, master, tile=None, lang=LANG_EN, dark_mode=False):
         super().__init__(master)
-        self.title("Edycja kafelka")
+        self.lang = lang
+        self.dark_mode = dark_mode
+        self.t = TRANSLATIONS.get(lang, TRANSLATIONS[LANG_EN])
+
+        is_edit = tile is not None and bool((tile or {}).get("name"))
+        default_name = self.t["new_tile_default_name"]
+
+        self.title(self.t["edit_tile_title"] if is_edit else self.t["add_tile_title"])
         self.resizable(False, False)
         self.transient(master)
         self.grab_set()
 
         self.result = None
 
-        self.var_name = tk.StringVar(value=(tile or {}).get("name", "Nowy kafelek"))
+        self.var_name = tk.StringVar(value=(tile or {}).get("name", default_name))
         self.var_action_type = tk.StringVar(value=(tile or {}).get("action_type", "url"))
         self.var_target = tk.StringVar(value=(tile or {}).get("target", ""))
         self.var_color = tk.StringVar(value=(tile or {}).get("color", DEFAULT_TILE_COLOR))
+        self.var_description = tk.StringVar(value=(tile or {}).get("description", ""))
 
+        self._apply_dialog_theme()
         self._build_ui()
         self.protocol("WM_DELETE_WINDOW", self._cancel)
         self.bind("<Return>", lambda _e: self._save())
@@ -79,16 +295,21 @@ class EditTileDialog(tk.Toplevel):
         self.wait_visibility()
         self.focus_force()
 
+    def _apply_dialog_theme(self):
+        bg_color = "#1e1e1e" if self.dark_mode else "#f0f0f0"
+        self.configure(bg=bg_color)
+
     def _build_ui(self):
         frame = ttk.Frame(self, padding=12)
         frame.grid(sticky="nsew")
+        frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text="Nazwa:").grid(row=0, column=0, sticky="w", pady=(0, 6))
+        ttk.Label(frame, text=self.t["name"]).grid(row=0, column=0, sticky="w", pady=(0, 6))
         ttk.Entry(frame, textvariable=self.var_name, width=42).grid(
             row=0, column=1, sticky="ew", pady=(0, 6)
         )
 
-        ttk.Label(frame, text="Typ akcji:").grid(row=1, column=0, sticky="w", pady=(0, 6))
+        ttk.Label(frame, text=self.t["action_type"]).grid(row=1, column=0, sticky="w", pady=(0, 6))
         combo = ttk.Combobox(
             frame,
             textvariable=self.var_action_type,
@@ -98,32 +319,29 @@ class EditTileDialog(tk.Toplevel):
         )
         combo.grid(row=1, column=1, sticky="ew", pady=(0, 6))
 
-        ttk.Label(frame, text="Cel / komenda:").grid(row=2, column=0, sticky="w")
-        ttk.Entry(frame, textvariable=self.var_target, width=42).grid(row=2, column=1, sticky="ew")
+        ttk.Label(frame, text=self.t["target"]).grid(row=2, column=0, sticky="w", pady=(0, 6))
+        ttk.Entry(frame, textvariable=self.var_target, width=42).grid(row=2, column=1, sticky="ew", pady=(0, 6))
 
-        ttk.Label(frame, text="Kolor kafelka:").grid(row=3, column=0, sticky="w", pady=(6, 0))
+        ttk.Label(frame, text=self.t["color"]).grid(row=3, column=0, sticky="w", pady=(0, 6))
         color_row = ttk.Frame(frame)
-        color_row.grid(row=3, column=1, sticky="ew", pady=(6, 0))
+        color_row.grid(row=3, column=1, sticky="ew", pady=(0, 6))
         ttk.Entry(color_row, textvariable=self.var_color, width=32).pack(side="left")
-        ttk.Button(color_row, text="Wybierz...", command=self._pick_color).pack(side="left", padx=(8, 0))
+        ttk.Button(color_row, text=self.t["choose_color"], command=self._pick_color).pack(side="left", padx=(8, 0))
 
-        hint = (
-            "url: https://...\n"
-            "path: C:\\folder\\...\n"
-            "exe: C:\\Program Files\\App\\app.exe\n"
-            "ps1: C:\\skrypty\\zadanie.ps1 (tylko sciezka)\n"
-            "python: C:\\skrypty\\zadanie.py (tylko sciezka)\n"
-            "chrome_profile: C:\\...\\Google\\Chrome\\User Data\\Default\n"
-            "command: dowolne polecenie, np. powershell -File C:\\skrypt.ps1"
+        ttk.Label(frame, text=self.t["description"]).grid(row=4, column=0, sticky="w", pady=(0, 6))
+        ttk.Entry(frame, textvariable=self.var_description, width=42).grid(
+            row=4, column=1, sticky="ew", pady=(0, 6)
         )
-        ttk.Label(frame, text=hint, foreground="#666666").grid(
-            row=4, column=0, columnspan=2, sticky="w", pady=(8, 10)
+
+        hint_fg = "#aaaaaa" if self.dark_mode else "#666666"
+        ttk.Label(frame, text=self.t["hint_dialog"], foreground=hint_fg).grid(
+            row=5, column=0, columnspan=2, sticky="w", pady=(8, 10)
         )
 
         buttons = ttk.Frame(frame)
-        buttons.grid(row=5, column=0, columnspan=2, sticky="e")
-        ttk.Button(buttons, text="Anuluj", command=self._cancel).pack(side="right")
-        ttk.Button(buttons, text="Zapisz", command=self._save).pack(side="right", padx=(0, 8))
+        buttons.grid(row=6, column=0, columnspan=2, sticky="e")
+        ttk.Button(buttons, text=self.t["cancel"], command=self._cancel).pack(side="right")
+        ttk.Button(buttons, text=self.t["save"], command=self._save).pack(side="right", padx=(0, 8))
 
     def _pick_color(self):
         chosen = colorchooser.askcolor(initialcolor=self.var_color.get(), parent=self)
@@ -135,20 +353,21 @@ class EditTileDialog(tk.Toplevel):
         action_type = self.var_action_type.get().strip()
         target = self.var_target.get().strip()
         color = self.var_color.get().strip() or DEFAULT_TILE_COLOR
+        description = self.var_description.get().strip()
 
         if not name:
-            messagebox.showerror("Blad", "Nazwa kafelka nie moze byc pusta.", parent=self)
+            messagebox.showerror(self.t["error"], self.t["error_name_empty"], parent=self)
             return
         if action_type not in {"url", "path", "exe", "ps1", "python", "chrome_profile", "command"}:
-            messagebox.showerror("Blad", "Nieprawidlowy typ akcji.", parent=self)
+            messagebox.showerror(self.t["error"], self.t["error_action_type"], parent=self)
             return
         if not target:
-            messagebox.showerror("Blad", "Pole 'Cel / komenda' nie moze byc puste.", parent=self)
+            messagebox.showerror(self.t["error"], self.t["error_target_empty"], parent=self)
             return
         try:
             self.winfo_rgb(color)
         except tk.TclError:
-            messagebox.showerror("Blad", "Nieprawidlowy kolor (np. #1f6feb).", parent=self)
+            messagebox.showerror(self.t["error"], self.t["error_color"], parent=self)
             return
 
         self.result = {
@@ -156,6 +375,7 @@ class EditTileDialog(tk.Toplevel):
             "action_type": action_type,
             "target": target,
             "color": color,
+            "description": description,
         }
         self.destroy()
 
@@ -167,15 +387,24 @@ class EditTileDialog(tk.Toplevel):
 class TileApp:
     def __init__(self, root):
         self.root = root
-        self.root.title(APP_TITLE)
-        self.root.minsize(640, 420)
         self.config_file = PRIMARY_CONFIG_FILE
+        self.tooltips = []
 
         config = self._load_config()
         self.tiles = config["tiles"]
         self.always_on_top = bool(config["always_on_top"])
+        self.dark_mode = bool(config.get("dark_mode", False))
+        self.lang = config.get("language", LANG_EN)
+        if self.lang not in (LANG_EN, LANG_PL):
+            self.lang = LANG_EN
+
         self.var_topmost = tk.BooleanVar(value=self.always_on_top)
+        self.var_dark_mode = tk.BooleanVar(value=self.dark_mode)
+        self.var_language = tk.StringVar(value=LANG_NAMES.get(self.lang, "English"))
+
         self.root.attributes("-topmost", self.always_on_top)
+        self.root.minsize(720, 440)
+
         self.drag_index = None
         self.drag_start_xy = None
         self.drag_moved = False
@@ -185,24 +414,115 @@ class TileApp:
 
         self.toolbar = ttk.Frame(self.main)
         self.toolbar.pack(fill="x")
-        ttk.Button(self.toolbar, text="+ Dodaj kafelek", command=self.add_tile).pack(side="left")
-        ttk.Button(self.toolbar, text="Zapisz", command=self.save_tiles).pack(side="left", padx=(8, 0))
-        ttk.Checkbutton(
+
+        self.btn_add_tile = ttk.Button(self.toolbar, command=self.add_tile)
+        self.btn_add_tile.pack(side="left")
+
+        self.btn_save = ttk.Button(self.toolbar, command=self.save_tiles)
+        self.btn_save.pack(side="left", padx=(8, 0))
+
+        self.chk_topmost = ttk.Checkbutton(
             self.toolbar,
-            text="Zawsze na wierzchu",
             variable=self.var_topmost,
             command=self.toggle_always_on_top,
-        ).pack(side="left", padx=(12, 0))
-        ttk.Label(
+        )
+        self.chk_topmost.pack(side="left", padx=(12, 0))
+
+        self.chk_dark = ttk.Checkbutton(
             self.toolbar,
-            text="LPM: uruchom | PPM: edytuj/usun",
-            foreground="#555555",
-        ).pack(side="right")
+            variable=self.var_dark_mode,
+            command=self.toggle_dark_mode,
+        )
+        self.chk_dark.pack(side="left", padx=(12, 0))
+
+        self.lbl_lang = ttk.Label(self.toolbar)
+        self.lbl_lang.pack(side="left", padx=(12, 4))
+
+        self.combo_lang = ttk.Combobox(
+            self.toolbar,
+            textvariable=self.var_language,
+            values=["English", "Polski"],
+            state="readonly",
+            width=8,
+        )
+        self.combo_lang.pack(side="left")
+        self.combo_lang.bind("<<ComboboxSelected>>", self.on_language_change)
+
+        self.lbl_hint = ttk.Label(self.toolbar)
+        self.lbl_hint.pack(side="right")
 
         self.tiles_frame = ttk.Frame(self.main)
         self.tiles_frame.pack(fill="both", expand=True, pady=(12, 0))
 
+        self.apply_theme()
+        self.update_ui_language()
         self.render_tiles()
+
+    @property
+    def t(self):
+        return TRANSLATIONS.get(self.lang, TRANSLATIONS[LANG_EN])
+
+    def update_ui_language(self):
+        self.root.title(self.t["app_title"])
+        self.btn_add_tile.config(text=self.t["add_tile"])
+        self.btn_save.config(text=self.t["save"])
+        self.chk_topmost.config(text=self.t["always_on_top"])
+        self.chk_dark.config(text=self.t["dark_mode"])
+        self.lbl_lang.config(text=self.t["language"])
+        self.lbl_hint.config(text=self.t["hint_mouse"])
+
+    def on_language_change(self, event=None):
+        chosen = self.var_language.get()
+        self.lang = LANG_CODES.get(chosen, LANG_EN)
+        self.update_ui_language()
+        self.render_tiles()
+        self._autosave()
+
+    def toggle_dark_mode(self):
+        self.apply_theme()
+        self.render_tiles()
+        self._autosave()
+
+    def apply_theme(self):
+        self.dark_mode = bool(self.var_dark_mode.get())
+        style = ttk.Style(self.root)
+
+        bg = "#1e1e1e" if self.dark_mode else "#f0f0f0"
+        fg = "#ffffff" if self.dark_mode else "#000000"
+        entry_bg = "#2d2d2d" if self.dark_mode else "#ffffff"
+        btn_bg = "#3c3c3c" if self.dark_mode else "#e1e1e1"
+        btn_active = "#505050" if self.dark_mode else "#ececec"
+        hint_fg = "#aaaaaa" if self.dark_mode else "#555555"
+
+        self.root.configure(bg=bg)
+
+        if self.dark_mode:
+            style.theme_use("default")
+            style.configure(".", background=bg, foreground=fg)
+            style.configure("TFrame", background=bg)
+            style.configure("TLabel", background=bg, foreground=fg)
+            style.configure("TCheckbutton", background=bg, foreground=fg)
+            style.configure("TButton", background=btn_bg, foreground=fg, borderwidth=1)
+            style.map("TButton", background=[("active", btn_active)])
+            style.configure("TCombobox", fieldbackground=entry_bg, background=btn_bg, foreground=fg, arrowcolor=fg)
+            style.map("TCombobox", fieldbackground=[("readonly", entry_bg)], foreground=[("readonly", fg)])
+            style.configure("TEntry", fieldbackground=entry_bg, foreground=fg)
+        else:
+            if "vista" in style.theme_names():
+                style.theme_use("vista")
+            else:
+                style.theme_use("default")
+            style.configure(".", background="#f0f0f0", foreground="#000000")
+            style.configure("TFrame", background="#f0f0f0")
+            style.configure("TLabel", background="#f0f0f0", foreground="#000000")
+            style.configure("TCheckbutton", background="#f0f0f0", foreground="#000000")
+            style.configure("TButton", background="#e1e1e1", foreground="#000000")
+            style.map("TButton", background=[("active", "#ececec")])
+            style.configure("TCombobox", fieldbackground="#ffffff", background="#e1e1e1", foreground="#000000")
+            style.map("TCombobox", fieldbackground=[("readonly", "#ffffff")], foreground=[("readonly", "#000000")])
+            style.configure("TEntry", fieldbackground="#ffffff", foreground="#000000")
+
+        self.lbl_hint.configure(foreground=hint_fg)
 
     def _validate_tiles(self, data):
         valid = []
@@ -214,22 +534,44 @@ class TileApp:
                     and isinstance(item.get("action_type"), str)
                     and isinstance(item.get("target"), str)
                 ):
-                    valid.append(item)
+                    tile = {
+                        "name": item["name"],
+                        "action_type": item["action_type"],
+                        "target": item["target"],
+                        "color": item.get("color", DEFAULT_TILE_COLOR),
+                        "description": item.get("description", "")
+                        if isinstance(item.get("description"), str)
+                        else "",
+                    }
+                    valid.append(tile)
         return valid
 
     def _parse_config_payload(self, data):
-        # Backward compatibility: stary format to sama lista kafelkow.
         if isinstance(data, list):
             tiles = self._validate_tiles(data)
             if tiles:
-                return {"always_on_top": False, "tiles": tiles}
+                return {
+                    "always_on_top": False,
+                    "dark_mode": False,
+                    "language": LANG_EN,
+                    "tiles": tiles,
+                }
             return None
 
         if isinstance(data, dict):
             tiles = self._validate_tiles(data.get("tiles"))
             always_on_top = bool(data.get("always_on_top", False))
-            if tiles:
-                return {"always_on_top": always_on_top, "tiles": tiles}
+            dark_mode = bool(data.get("dark_mode", False))
+            language = str(data.get("language", LANG_EN))
+            if language not in (LANG_EN, LANG_PL):
+                language = LANG_EN
+            if tiles is not None:
+                return {
+                    "always_on_top": always_on_top,
+                    "dark_mode": dark_mode,
+                    "language": language,
+                    "tiles": tiles,
+                }
             return None
 
         return None
@@ -252,7 +594,12 @@ class TileApp:
 
         payload = self._try_read_payload(BUNDLED_SEED_CONFIG_FILE)
         if not payload:
-            payload = {"always_on_top": False, "tiles": list(DEFAULT_TILES)}
+            payload = {
+                "always_on_top": False,
+                "dark_mode": False,
+                "language": LANG_EN,
+                "tiles": list(DEFAULT_TILES),
+            }
         self._write_config(payload)
         return payload
 
@@ -281,22 +628,35 @@ class TileApp:
     def _build_config_payload(self):
         return {
             "always_on_top": bool(self.var_topmost.get()),
+            "dark_mode": bool(self.var_dark_mode.get()),
+            "language": self.lang,
             "tiles": self.tiles,
         }
 
     def save_tiles(self):
         try:
             self._write_config(self._build_config_payload())
-            messagebox.showinfo("Zapisano", f"Ustawienia zapisane w:\n{self.config_file}")
+            messagebox.showinfo(
+                self.t["saved_title"],
+                self.t["saved_msg"].format(self.config_file),
+                parent=self.root,
+            )
         except OSError as exc:
-            messagebox.showerror("Blad zapisu", str(exc))
+            messagebox.showerror(self.t["save_error_title"], str(exc), parent=self.root)
 
     def toggle_always_on_top(self):
         new_value = bool(self.var_topmost.get())
         self.root.attributes("-topmost", new_value)
         self._autosave()
 
+    def _hide_all_tooltips(self):
+        for tt in getattr(self, "tooltips", []):
+            tt.hide()
+
     def render_tiles(self):
+        self._hide_all_tooltips()
+        self.tooltips = []
+
         for child in self.tiles_frame.winfo_children():
             child.destroy()
 
@@ -326,15 +686,24 @@ class TileApp:
             btn.bind("<B1-Motion>", self.on_tile_motion)
             btn.bind("<ButtonRelease-1>", self.on_tile_release)
 
+            desc = tile.get("description", "")
+            if desc:
+                tt = Tooltip(btn, desc, dark_mode=self.dark_mode)
+                self.tooltips.append(tt)
+
     def add_tile(self):
+        self._hide_all_tooltips()
         dialog = EditTileDialog(
             self.root,
             tile={
-                "name": "Nowy kafelek",
+                "name": self.t["new_tile_default_name"],
                 "action_type": "url",
                 "target": "",
                 "color": DEFAULT_TILE_COLOR,
+                "description": "",
             },
+            lang=self.lang,
+            dark_mode=self.dark_mode,
         )
         self.root.wait_window(dialog)
         if dialog.result:
@@ -343,7 +712,13 @@ class TileApp:
             self._autosave()
 
     def edit_tile(self, index):
-        dialog = EditTileDialog(self.root, tile=self.tiles[index])
+        self._hide_all_tooltips()
+        dialog = EditTileDialog(
+            self.root,
+            tile=self.tiles[index],
+            lang=self.lang,
+            dark_mode=self.dark_mode,
+        )
         self.root.wait_window(dialog)
         if dialog.result:
             self.tiles[index] = dialog.result
@@ -351,8 +726,13 @@ class TileApp:
             self._autosave()
 
     def delete_tile(self, index):
+        self._hide_all_tooltips()
         tile_name = self.tiles[index]["name"]
-        if messagebox.askyesno("Usun kafelek", f"Czy na pewno usunac '{tile_name}'?"):
+        if messagebox.askyesno(
+            self.t["delete_title"],
+            self.t["delete_confirm"].format(tile_name),
+            parent=self.root,
+        ):
             del self.tiles[index]
             self.render_tiles()
             self._autosave()
@@ -364,9 +744,22 @@ class TileApp:
             pass
 
     def open_tile_menu(self, event, index):
-        menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Edytuj", command=lambda: self.edit_tile(index))
-        menu.add_command(label="Usun", command=lambda: self.delete_tile(index))
+        self._hide_all_tooltips()
+        bg = "#2d2d2d" if self.dark_mode else "#ffffff"
+        fg = "#ffffff" if self.dark_mode else "#000000"
+        active_bg = "#3e3e42" if self.dark_mode else "#e5e5e5"
+        active_fg = "#ffffff" if self.dark_mode else "#000000"
+
+        menu = tk.Menu(
+            self.root,
+            tearoff=0,
+            bg=bg,
+            fg=fg,
+            activebackground=active_bg,
+            activeforeground=active_fg,
+        )
+        menu.add_command(label=self.t["edit"], command=lambda: self.edit_tile(index))
+        menu.add_command(label=self.t["delete"], command=lambda: self.delete_tile(index))
         menu.tk_popup(event.x_root, event.y_root)
 
     def _safe_tile_color(self, color):
@@ -378,6 +771,7 @@ class TileApp:
             return DEFAULT_TILE_COLOR
 
     def on_tile_press(self, event, index):
+        self._hide_all_tooltips()
         self.drag_index = index
         self.drag_start_xy = (event.x_root, event.y_root)
         self.drag_moved = False
@@ -433,19 +827,19 @@ class TileApp:
             elif action_type == "path":
                 path = Path(os.path.expandvars(target)).expanduser()
                 if not path.exists():
-                    raise FileNotFoundError(f"Sciezka nie istnieje:\n{path}")
+                    raise FileNotFoundError(self.t["path_not_found"].format(path))
                 os.startfile(path)  # type: ignore[attr-defined]
             elif action_type == "exe":
                 exe_path = Path(os.path.expandvars(target)).expanduser()
                 if not exe_path.exists():
-                    raise FileNotFoundError(f"Plik EXE nie istnieje:\n{exe_path}")
+                    raise FileNotFoundError(self.t["exe_not_found"].format(exe_path))
                 if exe_path.is_dir():
-                    raise IsADirectoryError(f"Podana sciezka jest folderem, nie plikiem EXE:\n{exe_path}")
+                    raise IsADirectoryError(self.t["path_is_dir"].format(exe_path))
                 subprocess.Popen([str(exe_path)])
             elif action_type == "ps1":
                 script_path = Path(os.path.expandvars(target)).expanduser()
                 if not script_path.exists():
-                    raise FileNotFoundError(f"Skrypt nie istnieje:\n{script_path}")
+                    raise FileNotFoundError(self.t["script_not_found"].format(script_path))
                 subprocess.Popen(
                     [
                         "powershell.exe",
@@ -459,13 +853,13 @@ class TileApp:
             elif action_type == "python":
                 script_path = Path(os.path.expandvars(target)).expanduser()
                 if not script_path.exists():
-                    raise FileNotFoundError(f"Skrypt nie istnieje:\n{script_path}")
+                    raise FileNotFoundError(self.t["script_not_found"].format(script_path))
                 python_exe = sys.executable if sys.executable else "python"
                 subprocess.Popen([python_exe, str(script_path)])
             elif action_type == "chrome_profile":
                 profile_path = Path(os.path.expandvars(target)).expanduser()
                 if not profile_path.exists():
-                    raise FileNotFoundError(f"Profil Chrome nie istnieje:\n{profile_path}")
+                    raise FileNotFoundError(self.t["chrome_profile_not_found"].format(profile_path))
 
                 chrome_exe = self._resolve_chrome_exe()
                 user_data_dir, profile_dir = self._extract_chrome_profile_parts(profile_path)
@@ -482,9 +876,9 @@ class TileApp:
             elif action_type == "command":
                 subprocess.Popen(target, shell=True)
             else:
-                raise ValueError(f"Nieznany typ akcji: {action_type}")
+                raise ValueError(self.t["unknown_action"].format(action_type))
         except Exception as exc:
-            messagebox.showerror("Blad uruchamiania", str(exc))
+            messagebox.showerror(self.t["run_error_title"], str(exc), parent=self.root)
 
     def _resolve_chrome_exe(self):
         candidates = [
@@ -495,27 +889,19 @@ class TileApp:
         for candidate in candidates:
             if candidate.exists():
                 return candidate
-        raise FileNotFoundError(
-            "Nie znaleziono chrome.exe.\n"
-            "Sprawdz instalacje Google Chrome (standardowa sciezka)."
-        )
+        raise FileNotFoundError(self.t["chrome_exe_not_found"])
 
     def _extract_chrome_profile_parts(self, profile_path):
         profile_name = profile_path.name
         parent_name = profile_path.parent.name.lower()
 
-        # Najczestszy przypadek: ...\\User Data\\Default lub ...\\User Data\\Profile 1
         if parent_name == "user data":
             return profile_path.parent, profile_name
 
-        # Alternatywnie pozwalamy podac samo ...\\User Data (domyslnie Default).
         if profile_name.lower() == "user data":
             return profile_path, "Default"
 
-        raise ValueError(
-            "Nieprawidlowa sciezka profilu Chrome.\n"
-            "Podaj np.: C:\\Users\\<user>\\AppData\\Local\\Google\\Chrome\\User Data\\Default"
-        )
+        raise ValueError(self.t["chrome_profile_invalid"])
 
     def _find_running_chrome_profile(self, user_data_dir, profile_dir):
         ps_script = (
@@ -544,7 +930,6 @@ class TileApp:
             is_default_profile = profile_norm == "default"
             is_default_user_data = user_data_norm == default_user_data
 
-            # 1) Dokladne dopasowanie po flagach procesu.
             for rec in records:
                 cmd = str(rec.get("CommandLine") or "").lower()
                 pid = rec.get("ProcessId")
@@ -560,8 +945,6 @@ class TileApp:
                 if user_match and profile_match:
                     return int(pid)
 
-            # 2) Fallback dla standardowego profilu Default bez flag:
-            # Chrome czesto startuje bez --user-data-dir i --profile-directory.
             if is_default_profile and is_default_user_data:
                 for rec in records:
                     cmd = str(rec.get("CommandLine") or "").lower()
@@ -608,7 +991,6 @@ class TileApp:
         if user32.SetForegroundWindow(hwnd):
             return True
 
-        # Fallback: chwilowe ustawienie TOPMOST zwykle skutecznie wyciaga okno na wierzch.
         user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
         user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE)
         return bool(user32.SetForegroundWindow(hwnd))
@@ -637,9 +1019,6 @@ class TileApp:
 
 def main():
     root = tk.Tk()
-    style = ttk.Style()
-    if "vista" in style.theme_names():
-        style.theme_use("vista")
     app = TileApp(root)
     root.mainloop()
 
