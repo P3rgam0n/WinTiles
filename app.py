@@ -1737,17 +1737,20 @@ class TileApp:
             )
             lbl_icon.pack(side="left", padx=(0, 4))
 
-            # Info icon ("i") in the top right corner
-            lbl_info = tk.Label(
-                top_row,
-                text="ⓘ",
-                font=("Segoe UI", 9),
-                bg=self.c_surface,
-                fg=self.c_fg_muted,
-                cursor="hand2",
-                padx=2,
-            )
-            lbl_info.pack(side="right")
+            # Info icon ("i") in the top right corner - only displayed when description exists
+            desc = self._build_tooltip_text(tile)
+            lbl_info = None
+            if desc:
+                lbl_info = tk.Label(
+                    top_row,
+                    text="ⓘ",
+                    font=("Segoe UI", 9),
+                    bg=self.c_surface,
+                    fg=self.c_fg_muted,
+                    cursor="hand2",
+                    padx=2,
+                )
+                lbl_info.pack(side="right")
 
             use_count = int(tile.get("use_count", 0))
             if use_count > 0:
@@ -1798,7 +1801,10 @@ class TileApp:
             lbl_sub.pack(side="left", fill="x", expand=True)
 
             # Store card reference
-            hover_widgets = [top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub, lbl_info]
+            hover_widgets = [top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub]
+            if lbl_info is not None:
+                hover_widgets.append(lbl_info)
+
             card_info = {
                 "card": card,
                 "content": content,
@@ -1813,41 +1819,27 @@ class TileApp:
                 card_info["widgets"].append(lbl_cnt)
             self.rendered_cards.append(card_info)
 
-            # Tooltip strictly on the info icon in the top right corner
-            tt_func = lambda t=tile: self._build_tooltip_text(t)
-            tt = Tooltip(lbl_info, tt_func, dark_mode=self.dark_mode)
-            self.tooltips.append(tt)
+            if lbl_info is not None:
+                # Tooltip strictly on the info icon in the top right corner displaying the description
+                tt_func = lambda t=tile: self._build_tooltip_text(t)
+                tt = Tooltip(lbl_info, tt_func, dark_mode=self.dark_mode)
+                self.tooltips.append(tt)
 
-            # Visual hover effects on the info icon itself
-            info_hover_fg = "#38bdf8" if self.dark_mode else "#0284c7"
-            info_normal_fg = self.c_fg_muted
-            lbl_info.bind("<Enter>", lambda e, l=lbl_info, c=info_hover_fg: l.configure(fg=c), add="+")
-            lbl_info.bind("<Leave>", lambda e, l=lbl_info, c=info_normal_fg: l.configure(fg=c), add="+")
-            # Prevent click on info icon from running tile or dragging
-            lbl_info.bind("<ButtonPress-1>", lambda e: "break", add="+")
-            lbl_info.bind("<ButtonRelease-1>", lambda e: "break", add="+")
-            lbl_info.bind("<MouseWheel>", self._on_mousewheel, add="+")
+                # Visual hover effects on the info icon itself
+                info_hover_fg = "#38bdf8" if self.dark_mode else "#0284c7"
+                info_normal_fg = self.c_fg_muted
+                lbl_info.bind("<Enter>", lambda e, l=lbl_info, c=info_hover_fg: l.configure(fg=c), add="+")
+                lbl_info.bind("<Leave>", lambda e, l=lbl_info, c=info_normal_fg: l.configure(fg=c), add="+")
+                # Prevent click on info icon from running tile or dragging
+                lbl_info.bind("<ButtonPress-1>", lambda e: "break", add="+")
+                lbl_info.bind("<ButtonRelease-1>", lambda e: "break", add="+")
+                lbl_info.bind("<MouseWheel>", self._on_mousewheel, add="+")
 
             # Bind mouse events to card and all child widgets
             self._bind_card_events(card_info)
 
     def _build_tooltip_text(self, tile):
-        t = self.t
-        lines = [str(tile.get("name", ""))]
-        act = tile.get("action_type", "")
-        meta = ACTION_DEFS.get(act, {})
-        lines.append(f"{meta.get('icon', '')} {act.upper()}: {tile.get('target', '')}")
-        if tile.get("description"):
-            lines.append(f"\n{tile['description']}")
-
-        stats = [t["tt_used"].format(int(tile.get("use_count", 0)))]
-        if tile.get("created_at"):
-            stats.append(t["tt_added"].format(format_datetime_display(tile["created_at"])))
-        if tile.get("last_used"):
-            stats.append(t["tt_last_used"].format(format_datetime_display(tile["last_used"])))
-
-        lines.append("\n" + " • ".join(stats))
-        return "\n".join(lines)
+        return str(tile.get("description") or "").strip()
 
     def _bind_card_events(self, card_info):
         real_idx = card_info["real_index"]

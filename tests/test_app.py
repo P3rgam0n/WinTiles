@@ -1039,4 +1039,81 @@ def test_canvas_scrollregion_resets_yview_when_content_fits(tk_root):
     sub_top.destroy()
 
 
+def test_tooltip_cases_a_b_c_d_e(tk_root, tmp_path):
+    """
+    Verify all tooltip description lifecycle cases:
+    Case A: description exists -> icon 'i' visible, hover shows description
+    Case B: empty description -> icon 'i' invisible, no tooltip
+    Case C: whitespace description -> icon 'i' invisible
+    Case D: edit description -> tooltip shows new description, old not kept
+    Case E: remove description -> icon 'i' disappears, tooltip not available
+    """
+    cfg_file = tmp_path / "tiles_abcde.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Tile A", "action_type": "url", "target": "https://a.com", "description": "Mój opis"},
+            {"name": "Tile B", "action_type": "url", "target": "https://b.com", "description": ""},
+            {"name": "Tile C", "action_type": "url", "target": "https://c.com", "description": "   "},
+        ]
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+
+        cards = tile_app.rendered_cards
+        assert len(cards) == 3
+
+        # Case A: description exists ("Mój opis")
+        card_a = cards[0]
+        assert card_a["lbl_info"] is not None
+        assert card_a["lbl_info"].cget("text") == "ⓘ"
+        assert len(tile_app.tooltips) == 1
+        tt_a = tile_app.tooltips[0]
+        assert tt_a.anchor_widget == card_a["lbl_info"]
+        assert tt_a.text_provider() == "Mój opis"
+
+        # Case B: empty description ("")
+        card_b = cards[1]
+        assert card_b["lbl_info"] is None
+
+        # Case C: whitespace description ("   ")
+        card_c = cards[2]
+        assert card_c["lbl_info"] is None
+
+        # Case D: edit description (Stary opis -> Nowy opis)
+        tile_app.tiles[0]["description"] = "Nowy opis"
+        tile_app.render_tiles()
+        sub_top.update()
+
+        card_a_edited = tile_app.rendered_cards[0]
+        assert card_a_edited["lbl_info"] is not None
+        assert len(tile_app.tooltips) == 1
+        tt_a_edited = tile_app.tooltips[0]
+        assert tt_a_edited.text_provider() == "Nowy opis"
+        assert tt_a_edited.text_provider() != "Mój opis"
+
+        # Case E: remove description
+        tile_app.tiles[0]["description"] = ""
+        tile_app.render_tiles()
+        sub_top.update()
+
+        card_a_cleared = tile_app.rendered_cards[0]
+        assert card_a_cleared["lbl_info"] is None
+        assert len(tile_app.tooltips) == 0
+
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+
 
