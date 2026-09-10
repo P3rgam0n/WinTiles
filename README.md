@@ -1,4 +1,4 @@
-# Kafelki - nowoczesna nakładka do pracy (Windows 11)
+# WinTiles - nowoczesna nakładka do pracy (Windows 11)
 
 Lekka, szybka i elegancka aplikacja desktopowa w Python/Tkinter pozwalająca na błyskawiczne uruchamianie stron, folderów, programów, skryptów, poleceń WSL, edytora VS Code oraz kopiowanie przydatnych promptów i tekstów do schowka.
 
@@ -12,16 +12,22 @@ Lekka, szybka i elegancka aplikacja desktopowa w Python/Tkinter pozwalająca na 
 - Upuszczenie na inny kafelek natychmiast przenosi kafelek na wskazaną pozycję.
 - Przeniesienie automatycznie przestawia tryb sortowania na „Kolejność własna” i zapisuje zmiany.
 
-### 2. Sortowanie kafelków
+### 2. Dedykowany opis i inteligentny tooltip informacyjny („ⓘ”)
+- Każdy kafelek może posiadać opcjonalny opis (`Opis (opcjonalnie)` / `Description (optional)`).
+- Gdy kafelek ma zdefiniowany opis, w jego prawym górnym rogu wyświetla się estetyczna ikona informacyjna **„ⓘ”**.
+- Najechanie kursorem na ikonę **„ⓘ”** natychmiast wyświetla dymek podpowiedzi (tooltip) z wprowadzonym opisem.
+- Jeżeli opis jest pusty, zawiera wyłącznie białe znaki lub zostanie usunięty podczas edycji, ikona **„ⓘ”** nie jest renderowana, zachowując czystość i minimalizm interfejsu.
+
+### 3. Sortowanie kafelków
 W prawym górnym rogu dostępna jest lista wyboru trybu sortowania:
 - **Kolejność własna (Manual)** – domyślna kolejność ułożona ręcznie przez użytkownika (metodą przeciągnij i upuść).
 - **Najczęściej używane (Most used)** – automatyczne sortowanie według licznika kliknięć/uruchomień (`use_count`).
 - **Ostatnio używane (Recently used)** – kafelki uruchamiane najświeżej pojawiają się na początku.
-- **Nazwa (A - Z)** oraz **Nazwa (Z - A)** – alfabetyczne sortowanie według nazwy.
+- **Nazwa (A - Z)** oraz **Nazwa (Z - A)** – alfabetyczne sortowanie według nazwy (z obsługą polskich znaków diakrytycznych).
 - **Data dodania (najnowsze)** oraz **Data dodania (najstarsze)** – sortowanie chronologiczne.
 - **Typ akcji (Action type)** – grupowanie kafelków według rodzaju akcji.
 
-### 3. Rozbudowane typy akcji (14 rodzajów)
+### 4. Rozbudowane typy akcji (14 rodzajów)
 1. `url` – otwiera stronę WWW w domyślnej przeglądarce (automatycznie uzupełnia `https://`).
 2. `path` – otwiera folder w Eksploratorze Windows.
 3. `file` – otwiera dowolny plik (PDF, dokument, obraz, arkusz) w powiązanym programie domyślnym.
@@ -37,7 +43,7 @@ W prawym górnym rogu dostępna jest lista wyboru trybu sortowania:
 13. `chrome_profile` – uruchamia Google Chrome na wskazanym profilu użytkownika (lub aktywuje już otwarte okno tego profilu).
 14. `command` – uruchamia dowolne polecenie w konsoli Windows.
 
-### 4. Nowoczesny interfejs UI
+### 5. Nowoczesny interfejs UI
 - **Pasek tytułu Windows 11**: natywny ciemny pasek tytułowy w trybie Dark Mode dzięki integracji z Windows Desktop Window Manager (DWM).
 - **Karty kafelków**: nowoczesne karty z kolorowym paskiem akcentowym, czytelną ikoną emoji, wytłuszczoną nazwą, etykietą typu akcji, subtelnym podtytułem oraz licznikiem użyć (`⚡`).
 - **Płynne przewijanie (Scrollable Canvas)**: responsywna siatka dostosowująca liczbę kolumn (od 1 do 6) do szerokości okna z obsługą kółka myszy.
@@ -77,7 +83,7 @@ pytest -v
 
 ## Format konfiguracji (`tiles.json`)
 
-Plik `tiles.json` zapisywany jest w katalogu aplikacji (lub w `%APPDATA%\Kafelki\tiles.json` w wersji spakowanej). Przykładowa struktura:
+Plik `tiles.json` zapisywany jest w katalogu aplikacji (lub w `%APPDATA%\WinTiles\tiles.json` / `~/.wintiles/tiles.json` z automatycznym fallbackiem do `%APPDATA%\Kafelki` dla zachowania pełnej kompatybilności wstecznej). Przykładowa struktura:
 
 ```json
 {
@@ -94,7 +100,8 @@ Plik `tiles.json` zapisywany jest w katalogu aplikacji (lub w `%APPDATA%\Kafelki
       "description": "Studio Gemini",
       "use_count": 14,
       "created_at": "2026-01-01T12:00:00",
-      "last_used": "2026-09-10T20:00:00"
+      "last_used": "2026-09-10T20:00:00",
+      "order": 0
     }
   ]
 }

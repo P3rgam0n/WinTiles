@@ -1,7 +1,29 @@
 # Dziennik Zmian (Changelog)
 
-Wszystkie istotne zmiany w projekcie Kafelki są dokumentowane w tym pliku.
+Wszystkie istotne zmiany w projekcie WinTiles są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
+
+## [1.2.0] - 2026-09-10
+
+### Zmieniono
+- **Rebranding na WinTiles**:
+  - Zaktualizowano oficjalną nazwę aplikacji, nagłówek interfejsu UI, tytuły okien oraz AppUserModelID (`wintiles.app.v1`).
+  - Zaktualizowano domyślny katalog konfiguracyjny do `%APPDATA%\WinTiles` oraz `~/.wintiles` z zachowaniem 100% kompatybilności wstecznej z dotychczasowym `%APPDATA%\Kafelki` i `~/.kafelki`.
+- **Usunięcie workflowów i artefaktów `.exe`**:
+  - Usunięto plik specyfikacji PyInstaller (`app.spec`), binaria `app.exe` oraz katalogi `build/` i `dist/`.
+  - Rozszerzono `.gitignore` o zabezpieczenie przed plikami `*.exe`, `*.spec`, `build/`, `dist/` i `release/`.
+  - Aplikacja działa bezpośrednio jako lekki skrypt Python (`run.bat` / `python app.py`).
+- **Uporządkowanie struktury repozytorium**:
+  - Usunięto przestarzałe i rozbieżne kopie skryptów (`app_exe.py`, `app — kopia.py`) oraz niepotrzebne pliki tymczasowe `.codex-tmp`.
+  - Uproszczono i wyczyszczono logikę wykrywania ścieżek zasobów i konfiguracji w `app.py`.
+
+### Poprawiono
+- **Naprawa `Description (optional)` i tooltipa informacyjnego („ⓘ”)**:
+  - Ściśle powiązano widoczność ikony „ⓘ” z obecnością opisu kafelka: ikona pojawia się wyłącznie wtedy, gdy kafelek posiada niepusty opis.
+  - Hover na ikonie „ⓘ” wyświetla zdefiniowany opis kafelka.
+  - Kafelki z pustym opisem lub zawierające wyłącznie spacje/białe znaki nie renderują ikony „ⓘ” i nie tworzą pustego tooltipa.
+  - Edycja opisu kafelka natychmiast odświeża treść dymku, a wyczyszczenie opisu natychmiast usuwa ikonę „ⓘ” z widoku kafelka.
+  - Dodano pełen zestaw testów automatycznych weryfikujących przypadki A, B, C, D i E cyklu życia opisu i tooltipa.
 
 ## [1.1.3] - 2026-09-10
 
