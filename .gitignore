@@ -1,8 +1,11 @@
 __pycache__/
-*.pyc
-app.exe
-.codex-tmp/
+*.py[cod]
+*$py.class
+*.exe
+*.spec
 build/
 dist/
+release/
 .pytest_cache/
 .~lock*
+.codex-tmp/
