@@ -348,14 +348,21 @@ def _primary_config_file():
 def _fallback_config_file():
     appdata = os.getenv("APPDATA")
     if appdata:
-        return Path(appdata) / APP_CONFIG_DIR_NAME / "tiles.json"
-    return Path.home() / ".kafelki" / "tiles.json"
+        p = Path(appdata) / APP_CONFIG_DIR_NAME / "tiles.json"
+        if p.exists():
+            return p
+        old_p = Path(appdata) / "Kafelki" / "tiles.json"
+        if old_p.exists():
+            return old_p
+        return p
+    default_p = Path.home() / ".wintiles" / "tiles.json"
+    old_home_p = Path.home() / ".kafelki" / "tiles.json"
+    if not default_p.exists() and old_home_p.exists():
+        return old_home_p
+    return default_p
 
 
 def _bundled_seed_config_file():
-    meipass = getattr(sys, "_MEIPASS", None)
-    if meipass:
-        return Path(meipass) / "tiles.json"
     return Path(__file__).resolve().with_name("tiles.json")
 
 
@@ -365,13 +372,7 @@ BUNDLED_SEED_CONFIG_FILE = _bundled_seed_config_file()
 
 
 def get_icon_path():
-    meipass = getattr(sys, "_MEIPASS", None)
-    if meipass:
-        p = Path(meipass) / "assets" / "icon.png"
-        if p.exists():
-            return p
-    base = Path(__file__).resolve().parent
-    p = base / "assets" / "icon.png"
+    p = Path(__file__).resolve().parent / "assets" / "icon.png"
     if p.exists():
         return p
     return None
