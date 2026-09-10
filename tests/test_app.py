@@ -690,8 +690,8 @@ def test_drag_and_drop_gap_detection(tk_root, tmp_path):
         sub_top.destroy()
 
 
-def test_tooltip_multi_widget_binding(tk_root, tmp_path):
-    """Verify Tooltip binds to all card children and does not hide when crossing into child labels."""
+def test_tooltip_info_icon_trigger(tk_root, tmp_path):
+    """Verify Tooltip binds strictly to top-right info icon 'i' and not to whole card."""
     cfg_file = tmp_path / "tiles_tt.json"
     cfg_data = {
         "tiles": [
@@ -713,22 +713,100 @@ def test_tooltip_multi_widget_binding(tk_root, tmp_path):
         tt = tile_app.tooltips[0]
         card_info = tile_app.rendered_cards[0]
 
-        # Verify tooltip covers card and inner labels
-        assert len(tt.widgets) >= 5
-        assert card_info["content"] in tt.widgets
+        # Verify info icon exists and tooltip binds specifically to it
+        lbl_info = card_info["lbl_info"]
+        assert lbl_info.cget("text") == "ⓘ"
+        assert tt.anchor_widget == lbl_info
+        assert tt.widgets == [lbl_info]
+        assert card_info["content"] not in tt.widgets
+        assert card_info["card"] not in tt.widgets
 
-        # Simulate enter on label
-        lbl_name = card_info["widgets"][5]
+        # Simulate enter on info icon: schedules tooltip
         tt.schedule()
         assert tt.after_id is not None
 
-        # Simulate leave from card frame with cursor still inside card bounds
-        rx = tt.anchor_widget.winfo_rootx()
-        ry = tt.anchor_widget.winfo_rooty()
-        # Simulated event coordinates inside card
-        dummy_event = type("Event", (), {"x_root": rx + 10, "y_root": ry + 10})()
-        tt.on_leave(dummy_event)
-        assert tt.after_id is not None, "Tooltip unexpectedly cancelled while mouse still inside card bounds"
+        # Simulate leave from info icon: immediately cancels and hides
+        tt.on_leave()
+        assert tt.after_id is None
+        assert tt.tip_window is None
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tooltip_minimize_and_unmap_cleanup(tk_root, tmp_path):
+    """Verify that minimizing / unmapping the window or calling _hide_all_tooltips destroys the tooltip."""
+    cfg_file = tmp_path / "tiles_tt_unmap.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Tile 1", "action_type": "url", "target": "https://example.com", "description": "Desc"},
+        ],
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+        tt = tile_app.tooltips[0]
+
+        # Manually trigger show
+        tt.show()
+        assert tt.tip_window is not None
+        assert tt.tip_window.winfo_exists()
+
+        # Simulate window unmap (minimize)
+        dummy_event = type("Event", (), {"widget": sub_top})()
+        tile_app._on_root_unmap(dummy_event)
+        assert tt.tip_window is None
+        assert app.Tooltip.active_tooltip is None
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tooltip_single_active_instance(tk_root, tmp_path):
+    """Verify that opening a new tooltip automatically closes any previous tooltip."""
+    cfg_file = tmp_path / "tiles_tt_single.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Tile 1", "action_type": "url", "target": "1.com", "description": "Desc 1"},
+            {"name": "Tile 2", "action_type": "url", "target": "2.com", "description": "Desc 2"},
+        ],
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+        tt1 = tile_app.tooltips[0]
+        tt2 = tile_app.tooltips[1]
+
+        tt1.show()
+        assert tt1.tip_window is not None
+        assert app.Tooltip.active_tooltip is tt1
+
+        # Now show tt2 - tt1 must be closed immediately
+        tt2.show()
+        assert tt1.tip_window is None
+        assert tt2.tip_window is not None
+        assert app.Tooltip.active_tooltip is tt2
+
+        # Hide active
+        app.Tooltip.hide_active()
+        assert tt2.tip_window is None
+        assert app.Tooltip.active_tooltip is None
     finally:
         app.PRIMARY_CONFIG_FILE = old_primary
         app.FALLBACK_CONFIG_FILE = old_fallback
@@ -782,5 +860,98 @@ def test_python_action_frozen_resolution(tk_root, monkeypatch, tmp_path):
     invoked_exe = called.get("popen", [])[0]
     assert "app.exe" not in invoked_exe.lower()
     assert "python" in invoked_exe.lower() or "py" in invoked_exe.lower()
+
+
+def test_info_icon_click_does_not_run_tile(tk_root, tmp_path, monkeypatch):
+    """Verify clicking the info icon does not trigger tile execution."""
+    cfg_file = tmp_path / "tiles_info_click.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Safe Tile", "action_type": "url", "target": "https://example.com", "description": "Safe"},
+        ],
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+
+        run_called = []
+        monkeypatch.setattr(tile_app, "run_tile", lambda idx: run_called.append(idx))
+
+        card_info = tile_app.rendered_cards[0]
+        lbl_info = card_info["lbl_info"]
+
+        # Clicking lbl_info generates break and must not run tile
+        res = lbl_info.event_generate("<ButtonPress-1>")
+        assert len(run_called) == 0
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tooltip_suppressed_when_minimized(tk_root, tmp_path):
+    """Verify Tooltip.show does not pop up if the toplevel window is minimized or not normal."""
+    sub_top = tk.Toplevel(tk_root)
+    lbl = tk.Label(sub_top, text="info")
+    lbl.pack()
+    sub_top.update()
+
+    tt = app.Tooltip(lbl, lambda: "Tip content")
+
+    # Iconify window
+    sub_top.iconify()
+    sub_top.update()
+
+    # Attempt to show
+    tt.show()
+    assert tt.tip_window is None
+    sub_top.destroy()
+
+
+def test_scrolling_and_deactivation_dismisses_tooltip(tk_root, tmp_path):
+    """Verify that scrolling with mousewheel and window focus out dismisses any active tooltip."""
+    cfg_file = tmp_path / "tiles_scroll_tt.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Scroll Tile", "action_type": "url", "target": "https://example.com", "description": "Tip"},
+        ],
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+        tt = tile_app.tooltips[0]
+
+        tt.show()
+        assert tt.tip_window is not None
+
+        # Scroll mouse wheel
+        dummy_event = type("Event", (), {"delta": -120})()
+        tile_app._on_mousewheel(dummy_event)
+        assert tt.tip_window is None
+
+        # Show again and test focus out
+        tt.show()
+        assert tt.tip_window is not None
+        focus_event = type("Event", (), {"widget": sub_top})()
+        tile_app._on_root_focus_out(focus_event)
+        assert tt.tip_window is None
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
 
 

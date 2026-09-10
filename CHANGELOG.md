@@ -3,6 +3,25 @@
 Wszystkie istotne zmiany w projekcie Kafelki są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.1.0] - 2026-09-10
+
+### Dodano
+- **Dedykowana ikona informacji "ⓘ" na kafelkach**:
+  - W prawym górnym rogu każdego kafelka dodano dyskretną ikonę informacji "ⓘ".
+  - Podpowiedzi (tooltips) wyświetlają się wyłącznie po najechaniu kursorem myszy na ikonę "ⓘ" w prawym górnym rogu, eliminując niepożądane wyskakiwanie tooltipów przy zwykłym poruszaniu się po kafelkach.
+  - Płynny efekt najechania kursorem na ikonę "ⓘ" (akcentowy kolor podświetlenia) oraz kursor `hand2`.
+  - Kliknięcie w ikonę "ⓘ" nie uruchamia akcji kafelka ani nie inicjuje przeciągania (pełna izolacja zdarzeń myszy).
+  - Inteligentne pozycjonowanie dymku podpowiedzi wyrównane do prawej krawędzi ikony z automatycznym zabezpieczeniem przed wyjściem poza ekran.
+
+### Poprawiono
+- **Natychmiastowe zamykanie podpowiedzi**:
+  - Naprawiono błąd zacinających się podpowiedzi — po opuszczeniu ikony "ⓘ" podpowiedź znika natychmiastowo bez żadnych opóźnień i bez pozostawania na ekranie.
+- **Eliminacja „duchów” tooltipów na pulpicie i przy minimalizacji**:
+  - Rozwiązano problem pozostawania dymków na pulpicie Windows po zminimalizowaniu aplikacji lub przełączeniu okien (ustawienie `transient` względem okna głównego).
+  - Automatyczne natychmiastowe niszczenie wszystkich tooltipów przy zdarzeniach minimalizacji (`<Unmap>`), utraty aktywności (`<Deactivate>`), utraty fokusu (`<FocusOut>`), przewijaniu kółkiem myszy (`<MouseWheel>`), zmianie rozmiaru canvasu oraz wciśnięciu klawisza Escape.
+  - Zaimplementowano gwarancję pojedynczej aktywnej podpowiedzi (`active_tooltip`), wykluczając możliwość jednoczesnego zablokowania wielu okienek na pulpicie.
+  - Naprawiono błąd w `_hide_all_tooltips`, który przedwcześnie czyścił referencje do zarządzanych obiektów tooltipów.
+
 ## [1.0.0] - 2026-09-10
 
 ### Dodano
