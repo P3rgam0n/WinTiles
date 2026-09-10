@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 app.exe
 .codex-tmp/
+build/
+dist/
+.pytest_cache/
+.~lock*
