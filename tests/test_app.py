@@ -851,7 +851,7 @@ def test_python_action_frozen_resolution(tk_root, monkeypatch, tmp_path):
     called = {}
     monkeypatch.setattr(app.subprocess, "Popen", lambda args, **kw: called.update({"popen": args}))
     monkeypatch.setattr(app.sys, "frozen", True, raising=False)
-    monkeypatch.setattr(app.sys, "executable", "D:\\Git\\kafelki\\dist\\app.exe")
+    monkeypatch.setattr(app.sys, "executable", "C:\\Program Files\\WinTiles\\app.exe")
 
     app_inst.tiles = [{"name": "Py Test", "action_type": "python", "target": str(script), "use_count": 0}]
     app_inst.run_tile(0)

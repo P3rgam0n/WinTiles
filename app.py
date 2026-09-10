@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
-APP_CONFIG_DIR_NAME = "Kafelki"
+APP_CONFIG_DIR_NAME = "WinTiles"
 DEFAULT_CHROME_EXE = Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")
 DEFAULT_TILE_COLOR = "#1f6feb"
 
@@ -260,7 +260,7 @@ TRANSLATIONS = {
         "unknown_action": "Unknown action type: {}",
     },
     LANG_PL: {
-        "app_title": "Kafelki - Ułatwienie Pracy",
+        "app_title": "WinTiles - Ułatwienie Pracy",
         "search_placeholder": "Szukaj kafelków (nazwa, typ, cel)...",
         "add_tile": "+ Dodaj kafelek",
         "save": "Zapisz",
@@ -971,7 +971,7 @@ class TileApp:
         # Application Icon
         try:
             if sys.platform == "win32":
-                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("kafelki.app.v1")
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("wintiles.app.v1")
         except Exception:
             pass
 
@@ -1056,7 +1056,7 @@ class TileApp:
 
         self.lbl_title = tk.Label(
             self.brand_frame,
-            text="Kafelki",
+            text="WinTiles",
             font=("Segoe UI", 12, "bold"),
         )
         self.lbl_title.pack(side="left")
