@@ -363,6 +363,19 @@ PRIMARY_CONFIG_FILE = _primary_config_file()
 FALLBACK_CONFIG_FILE = _fallback_config_file()
 BUNDLED_SEED_CONFIG_FILE = _bundled_seed_config_file()
 
+
+def get_icon_path():
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        p = Path(meipass) / "assets" / "icon.png"
+        if p.exists():
+            return p
+    base = Path(__file__).resolve().parent
+    p = base / "assets" / "icon.png"
+    if p.exists():
+        return p
+    return None
+
 DEFAULT_TILES = [
     {
         "name": "Google",
@@ -449,6 +462,7 @@ class Tooltip:
         self.dark_mode = dark_mode
         self.tip_window = None
         self.after_id = None
+        self.hide_after_id = None
 
         for w in self.widgets:
             w.bind("<Enter>", self.schedule, add="+")
@@ -457,13 +471,13 @@ class Tooltip:
             w.bind("<Destroy>", lambda e: self.hide(), add="+")
 
     def schedule(self, event=None):
+        self.unschedule_hide()
         self.unschedule()
         if not self.anchor_widget:
             return
         if Tooltip.active_tooltip and Tooltip.active_tooltip is not self:
             Tooltip.active_tooltip.hide()
-        # Fast, responsive hover delay: 180ms
-        self.after_id = self.anchor_widget.after(180, self.show)
+        self.after_id = self.anchor_widget.after(150, self.show)
 
     def unschedule(self):
         if self.after_id and self.anchor_widget:
@@ -473,11 +487,24 @@ class Tooltip:
                 pass
             self.after_id = None
 
+    def unschedule_hide(self):
+        if self.hide_after_id and self.anchor_widget:
+            try:
+                self.anchor_widget.after_cancel(self.hide_after_id)
+            except Exception:
+                pass
+            self.hide_after_id = None
+
     def on_leave(self, event=None):
-        # Disappear IMMEDIATELY when cursor leaves the widget
-        self.hide()
+        self.unschedule()
+        if self.tip_window and self.anchor_widget:
+            self.unschedule_hide()
+            self.hide_after_id = self.anchor_widget.after(150, self.hide)
+        else:
+            self.hide()
 
     def show(self, event=None):
+        self.unschedule_hide()
         self.unschedule()
         if self.tip_window:
             return
@@ -544,7 +571,11 @@ class Tooltip:
         )
         label.pack()
 
-        # Clicking the tooltip window also hides it immediately
+        tw.bind("<Enter>", lambda e: self.unschedule_hide(), add="+")
+        label.bind("<Enter>", lambda e: self.unschedule_hide(), add="+")
+        tw.bind("<Leave>", self.on_leave, add="+")
+        label.bind("<Leave>", self.on_leave, add="+")
+
         tw.bind("<ButtonPress>", lambda e: self.hide(), add="+")
         label.bind("<ButtonPress>", lambda e: self.hide(), add="+")
 
@@ -552,20 +583,20 @@ class Tooltip:
         tip_w = tw.winfo_width()
         tip_h = tw.winfo_height()
 
-        # Align right edge of tooltip with right edge of the info icon
         x = anchor_rx + anchor_w - tip_w
-        y = anchor_ry + anchor_h + 5
+        y = anchor_ry + anchor_h + 2
 
         if x < 10:
             x = max(10, anchor_rx)
         if x + tip_w > screen_width - 10:
             x = screen_width - tip_w - 10
         if y + tip_h > screen_height - 10:
-            y = max(10, anchor_ry - tip_h - 5)
+            y = max(10, anchor_ry - tip_h - 2)
 
         tw.wm_geometry(f"+{x}+{y}")
 
     def hide(self, event=None):
+        self.unschedule_hide()
         self.unschedule()
         if Tooltip.active_tooltip is self:
             Tooltip.active_tooltip = None
@@ -936,6 +967,23 @@ class TileApp:
         self.tooltips = []
         self.rendered_cards = []
 
+        # Application Icon
+        try:
+            if sys.platform == "win32":
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("kafelki.app.v1")
+        except Exception:
+            pass
+
+        icon_path = get_icon_path()
+        if icon_path:
+            try:
+                self.app_icon = tk.PhotoImage(file=str(icon_path))
+                self.root.iconphoto(True, self.app_icon)
+            except Exception:
+                self.app_icon = None
+        else:
+            self.app_icon = None
+
         config = self._load_config()
         self.tiles = config["tiles"]
         self.always_on_top = bool(config["always_on_top"])
@@ -1161,8 +1209,16 @@ class TileApp:
         self.lbl_status_count = tk.Label(self.status_bar, font=("Segoe UI", 9))
         self.lbl_status_count.pack(side="right")
 
+    def _update_scrollregion(self):
+        bbox = self.canvas.bbox("all")
+        if bbox:
+            canvas_h = self.canvas.winfo_height()
+            content_h = bbox[3] - bbox[1]
+            max_h = max(canvas_h, content_h)
+            self.canvas.configure(scrollregion=(0, 0, bbox[2], max_h))
+
     def _on_inner_frame_configure(self, event=None):
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._update_scrollregion()
 
     def _on_canvas_configure(self, event):
         self._hide_all_tooltips()
@@ -1173,10 +1229,15 @@ class TileApp:
         if new_cols != self.current_cols:
             self.current_cols = new_cols
             self.render_tiles()
+        else:
+            self._update_scrollregion()
 
     def _on_mousewheel(self, event):
         self._hide_all_tooltips()
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        bbox = self.canvas.bbox("all")
+        content_h = (bbox[3] - bbox[1]) if bbox else 0
+        if content_h > self.canvas.winfo_height():
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def show_toast(self, message, duration_ms=2500):
         if self.toast_timer:
@@ -1947,10 +2008,14 @@ class TileApp:
             # Auto-scroll canvas if dragging near top/bottom edge
             cy = self.canvas.winfo_rooty()
             ch = self.canvas.winfo_height()
-            if event.y_root < cy + 30:
-                self.canvas.yview_scroll(-1, "units")
-            elif event.y_root > cy + ch - 30:
-                self.canvas.yview_scroll(1, "units")
+            bbox = self.canvas.bbox("all")
+            content_h = (bbox[3] - bbox[1]) if bbox else 0
+            if content_h > ch:
+                y_top, y_bot = self.canvas.yview()
+                if event.y_root < cy + 30 and y_top > 0.001:
+                    self.canvas.yview_scroll(-1, "units")
+                elif event.y_root > cy + ch - 30 and y_bot < 0.999:
+                    self.canvas.yview_scroll(1, "units")
 
     def _create_drag_ghost(self, source_index):
         tile = self.tiles[source_index]

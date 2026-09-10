@@ -3,6 +3,17 @@
 Wszystkie istotne zmiany w projekcie Kafelki są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.1.2] - 2026-09-10
+
+### Poprawiono
+- **Wyświetlanie opisu podpowiedzi po najechaniu na "ⓘ"**:
+  - Naprawiono płynność i natychmiastowe zamykanie podpowiedzi (tooltip) przy najechaniu na ikonę "ⓘ".
+  - Dodano krótkie opóźnienie ochronne (grace period) przy opuszczaniu ikony "ⓘ" oraz obsługę najechania myszą bezpośrednio na okienko podpowiedzi.
+- **Wyeliminowanie wolnego pola u góry okna przy przeciąganiu kafelka (Drag & Drop)**:
+  - Naprawiono automatyczne przewijanie canvasu — zablokowano ujemne i przedwczesne przewijanie u góry okna gdy wysokość zawartości jest mniejsza lub równa wysokości okna canvas.
+- **Ładowanie ikony aplikacji (`assets/icon.png`)**:
+  - Podpięto ładowanie dedykowanej ikony `assets/icon.png` do okna aplikacji (`root.iconphoto`) oraz identyfikatora AppUserModelID dla paska zadań Windows.
+
 ## [1.1.1] - 2026-09-10
 
 ### Dodano
