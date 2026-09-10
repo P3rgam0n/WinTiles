@@ -516,7 +516,7 @@ class Tooltip:
             if not self.anchor_widget.winfo_exists() or not self.anchor_widget.winfo_ismapped():
                 return
             root = self.anchor_widget.winfo_toplevel()
-            if not root.winfo_exists() or root.wm_state() != "normal":
+            if not root.winfo_exists() or root.wm_state() in ("iconic", "withdrawn"):
                 return
         except (tk.TclError, AttributeError):
             return
@@ -1216,6 +1216,8 @@ class TileApp:
             content_h = bbox[3] - bbox[1]
             max_h = max(canvas_h, content_h)
             self.canvas.configure(scrollregion=(0, 0, bbox[2], max_h))
+            if content_h <= canvas_h:
+                self.canvas.yview_moveto(0)
 
     def _on_inner_frame_configure(self, event=None):
         self._update_scrollregion()

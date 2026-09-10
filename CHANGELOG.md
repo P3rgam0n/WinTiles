@@ -3,6 +3,14 @@
 Wszystkie istotne zmiany w projekcie Kafelki są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.1.3] - 2026-09-10
+
+### Poprawiono
+- **Wyświetlanie opisu podpowiedzi w trybie pełnoekranowym (Maximized / Zoomed)**:
+  - Poprawiono warunek sprawdzający stan okna `root.wm_state()`, który wcześniej odrzucał pokazywanie tooltipu gdy okno było zmaksymalizowane (`zoomed`). Podpowiedzi na ikonie "ⓘ" działają teraz prawidłowo zarówno w trybie okienkowym, jak i pełnoekranowym.
+- **Wyeliminowanie wolnego pola u góry okna**:
+  - Wzbogacono `_update_scrollregion` o automatyczne zerowanie pozycji pionowej (`yview_moveto(0)`) w sytuacjach gdy rozmiar zawartości mieści się w widocznym obszarze canvasu.
+
 ## [1.1.2] - 2026-09-10
 
 ### Poprawiono

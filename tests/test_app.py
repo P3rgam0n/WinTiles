@@ -1009,3 +1009,34 @@ def test_tooltip_hover_grace_period(tk_root):
     sub_top.destroy()
 
 
+def test_tooltip_show_when_zoomed(tk_root, monkeypatch):
+    """Verify Tooltip.show works when window is in zoomed (maximized) state."""
+    sub_top = tk.Toplevel(tk_root)
+    monkeypatch.setattr(sub_top, "wm_state", lambda: "zoomed")
+    lbl = tk.Label(sub_top, text="i")
+    lbl.pack()
+    sub_top.update()
+
+    tt = app.Tooltip(lbl, lambda: "Maximized tooltip text")
+    tt.show()
+    assert tt.tip_window is not None
+    assert tt.tip_window.winfo_exists()
+    tt.hide()
+    sub_top.destroy()
+
+
+def test_canvas_scrollregion_resets_yview_when_content_fits(tk_root):
+    """Verify canvas yview is reset to 0 when content fits within canvas height."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.geometry("800x600")
+    tile_app = TileApp(sub_top)
+    sub_top.update()
+
+    # Simulate scrolled view
+    tile_app.canvas.yview_moveto(0.5)
+    tile_app._update_scrollregion()
+    assert tile_app.canvas.yview()[0] == 0.0
+    sub_top.destroy()
+
+
+
