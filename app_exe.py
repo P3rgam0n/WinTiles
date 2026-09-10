@@ -435,26 +435,38 @@ def get_target_preview(action_type, target, description=""):
 
 
 class Tooltip:
+    active_tooltip = None
+
     def __init__(self, widgets, text_provider, dark_mode=False):
-        if not isinstance(widgets, (list, tuple)):
-            widgets = [widgets]
-        self.widgets = widgets
-        self.anchor_widget = widgets[0]
+        if isinstance(widgets, (list, tuple)):
+            self.widgets = list(widgets)
+            self.anchor_widget = widgets[0] if widgets else None
+        else:
+            self.widgets = [widgets]
+            self.anchor_widget = widgets
+
         self.text_provider = text_provider
         self.dark_mode = dark_mode
         self.tip_window = None
         self.after_id = None
+
         for w in self.widgets:
             w.bind("<Enter>", self.schedule, add="+")
             w.bind("<Leave>", self.on_leave, add="+")
             w.bind("<ButtonPress>", self.hide, add="+")
+            w.bind("<Destroy>", lambda e: self.hide(), add="+")
 
     def schedule(self, event=None):
         self.unschedule()
-        self.after_id = self.anchor_widget.after(350, self.show)
+        if not self.anchor_widget:
+            return
+        if Tooltip.active_tooltip and Tooltip.active_tooltip is not self:
+            Tooltip.active_tooltip.hide()
+        # Fast, responsive hover delay: 180ms
+        self.after_id = self.anchor_widget.after(180, self.show)
 
     def unschedule(self):
-        if self.after_id:
+        if self.after_id and self.anchor_widget:
             try:
                 self.anchor_widget.after_cancel(self.after_id)
             except Exception:
@@ -462,39 +474,55 @@ class Tooltip:
             self.after_id = None
 
     def on_leave(self, event=None):
-        if event and self._is_inside_anchor(event.x_root, event.y_root):
-            return
+        # Disappear IMMEDIATELY when cursor leaves the widget
         self.hide()
 
-    def _is_inside_anchor(self, x_root, y_root):
-        try:
-            rx = self.anchor_widget.winfo_rootx()
-            ry = self.anchor_widget.winfo_rooty()
-            rw = self.anchor_widget.winfo_width()
-            rh = self.anchor_widget.winfo_height()
-            return rx <= x_root <= rx + rw and ry <= y_root <= ry + rh
-        except tk.TclError:
-            return False
-
     def show(self, event=None):
+        self.unschedule()
         if self.tip_window:
             return
+
+        if not self.anchor_widget:
+            return
+
+        try:
+            if not self.anchor_widget.winfo_exists() or not self.anchor_widget.winfo_ismapped():
+                return
+            root = self.anchor_widget.winfo_toplevel()
+            if not root.winfo_exists() or root.wm_state() != "normal":
+                return
+        except (tk.TclError, AttributeError):
+            return
+
         text = self.text_provider() if callable(self.text_provider) else self.text_provider
         if not text or not str(text).strip():
             return
 
+        if Tooltip.active_tooltip and Tooltip.active_tooltip is not self:
+            Tooltip.active_tooltip.hide()
+
         try:
-            x = self.anchor_widget.winfo_rootx() + 10
-            y = self.anchor_widget.winfo_rooty() + self.anchor_widget.winfo_height() + 5
+            anchor_rx = self.anchor_widget.winfo_rootx()
+            anchor_ry = self.anchor_widget.winfo_rooty()
+            anchor_w = self.anchor_widget.winfo_width()
+            anchor_h = self.anchor_widget.winfo_height()
+            screen_width = self.anchor_widget.winfo_screenwidth()
+            screen_height = self.anchor_widget.winfo_screenheight()
         except tk.TclError:
             return
 
-        screen_width = self.anchor_widget.winfo_screenwidth()
-        screen_height = self.anchor_widget.winfo_screenheight()
-
-        self.tip_window = tw = tk.Toplevel(self.anchor_widget)
+        self.tip_window = tw = tk.Toplevel(root)
         tw.wm_overrideredirect(True)
-        tw.wm_attributes("-topmost", True)
+        try:
+            tw.transient(root)
+        except tk.TclError:
+            pass
+        try:
+            tw.wm_attributes("-topmost", True)
+        except tk.TclError:
+            pass
+
+        Tooltip.active_tooltip = self
 
         bg_color = "#27272a" if self.dark_mode else "#ffffff"
         fg_color = "#f4f4f5" if self.dark_mode else "#0f172a"
@@ -516,25 +544,42 @@ class Tooltip:
         )
         label.pack()
 
+        # Clicking the tooltip window also hides it immediately
+        tw.bind("<ButtonPress>", lambda e: self.hide(), add="+")
+        label.bind("<ButtonPress>", lambda e: self.hide(), add="+")
+
         tw.update_idletasks()
         tip_w = tw.winfo_width()
         tip_h = tw.winfo_height()
 
+        # Align right edge of tooltip with right edge of the info icon
+        x = anchor_rx + anchor_w - tip_w
+        y = anchor_ry + anchor_h + 5
+
+        if x < 10:
+            x = max(10, anchor_rx)
         if x + tip_w > screen_width - 10:
             x = screen_width - tip_w - 10
         if y + tip_h > screen_height - 10:
-            y = self.anchor_widget.winfo_rooty() - tip_h - 5
+            y = max(10, anchor_ry - tip_h - 5)
 
         tw.wm_geometry(f"+{x}+{y}")
 
     def hide(self, event=None):
         self.unschedule()
+        if Tooltip.active_tooltip is self:
+            Tooltip.active_tooltip = None
         if self.tip_window:
             try:
                 self.tip_window.destroy()
             except tk.TclError:
                 pass
             self.tip_window = None
+
+    @classmethod
+    def hide_active(cls):
+        if cls.active_tooltip:
+            cls.active_tooltip.hide()
 
 
 
@@ -927,6 +972,9 @@ class TileApp:
 
         self._build_main_layout()
         self.root.bind("<Escape>", self._on_escape_pressed)
+        self.root.bind("<Unmap>", self._on_root_unmap, add="+")
+        self.root.bind("<Deactivate>", lambda e: self._hide_all_tooltips(), add="+")
+        self.root.bind("<FocusOut>", self._on_root_focus_out, add="+")
         self.apply_theme()
         self.update_ui_language()
         if self.current_sort != "manual":
@@ -1079,7 +1127,12 @@ class TileApp:
         self.content_container.pack(fill="both", expand=True, padx=12, pady=(0, 6))
 
         self.canvas = tk.Canvas(self.content_container, bd=0, highlightthickness=0)
-        self.scrollbar = ttk.Scrollbar(self.content_container, orient="vertical", command=self.canvas.yview)
+
+        def _on_scrollbar_scroll(*args):
+            self._hide_all_tooltips()
+            self.canvas.yview(*args)
+
+        self.scrollbar = ttk.Scrollbar(self.content_container, orient="vertical", command=_on_scrollbar_scroll)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.scrollbar.pack(side="right", fill="y")
@@ -1092,6 +1145,8 @@ class TileApp:
         self.canvas.bind("<Configure>", self._on_canvas_configure)
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
         self.tiles_inner_frame.bind("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind("<ButtonPress>", lambda e: self._hide_all_tooltips(), add="+")
+        self.tiles_inner_frame.bind("<ButtonPress>", lambda e: self._hide_all_tooltips(), add="+")
 
         # Bottom Status Bar
         self.status_bar = tk.Frame(self.main_container, height=26, padx=12, pady=4)
@@ -1110,6 +1165,7 @@ class TileApp:
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def _on_canvas_configure(self, event):
+        self._hide_all_tooltips()
         canvas_width = event.width
         self.canvas.itemconfig(self.inner_frame_id, width=canvas_width)
 
@@ -1119,6 +1175,7 @@ class TileApp:
             self.render_tiles()
 
     def _on_mousewheel(self, event):
+        self._hide_all_tooltips()
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def show_toast(self, message, duration_ms=2500):
@@ -1455,9 +1512,9 @@ class TileApp:
             pass
 
     def _hide_all_tooltips(self):
+        Tooltip.hide_active()
         for tt in getattr(self, "tooltips", []):
             tt.hide()
-        self.tooltips = []
 
     def on_sort_selected(self, event=None):
         disp = self.var_sort.get()
@@ -1515,6 +1572,7 @@ class TileApp:
 
     def render_tiles(self):
         self._hide_all_tooltips()
+        self.tooltips = []
         self.rendered_cards = []
 
         for child in self.tiles_inner_frame.winfo_children():
@@ -1602,7 +1660,7 @@ class TileApp:
             content = tk.Frame(card, bg=self.c_surface, padx=8, pady=6)
             content.pack(side="left", fill="both", expand=True)
 
-            # Top Row: Icon + Title + Count Badge
+            # Top Row: Icon + Title + Count Badge + Info Icon ("i")
             top_row = tk.Frame(content, bg=self.c_surface)
             top_row.pack(fill="x", expand=True)
 
@@ -1615,16 +1673,17 @@ class TileApp:
             )
             lbl_icon.pack(side="left", padx=(0, 4))
 
-            title_text = tile["name"]
-            lbl_name = tk.Label(
+            # Info icon ("i") in the top right corner
+            lbl_info = tk.Label(
                 top_row,
-                text=title_text,
-                font=("Segoe UI", 9, "bold"),
+                text="ⓘ",
+                font=("Segoe UI", 9),
                 bg=self.c_surface,
-                fg=self.c_fg,
-                anchor="w",
+                fg=self.c_fg_muted,
+                cursor="hand2",
+                padx=2,
             )
-            lbl_name.pack(side="left", fill="x", expand=True)
+            lbl_info.pack(side="right")
 
             use_count = int(tile.get("use_count", 0))
             if use_count > 0:
@@ -1637,7 +1696,18 @@ class TileApp:
                     padx=4,
                     pady=1,
                 )
-                lbl_cnt.pack(side="right")
+                lbl_cnt.pack(side="right", padx=(0, 4))
+
+            title_text = tile["name"]
+            lbl_name = tk.Label(
+                top_row,
+                text=title_text,
+                font=("Segoe UI", 9, "bold"),
+                bg=self.c_surface,
+                fg=self.c_fg,
+                anchor="w",
+            )
+            lbl_name.pack(side="left", fill="x", expand=True)
 
             # Bottom Row: Action Type Badge + Subtitle
             bot_row = tk.Frame(content, bg=self.c_surface)
@@ -1664,7 +1734,7 @@ class TileApp:
             lbl_sub.pack(side="left", fill="x", expand=True)
 
             # Store card reference
-            hover_widgets = [top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub]
+            hover_widgets = [top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub, lbl_info]
             card_info = {
                 "card": card,
                 "content": content,
@@ -1673,15 +1743,26 @@ class TileApp:
                 "tile_color": tile_color,
                 "widgets": [card, color_strip, content, top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub],
                 "hover_widgets": hover_widgets,
+                "lbl_info": lbl_info,
             }
             if use_count > 0:
                 card_info["widgets"].append(lbl_cnt)
             self.rendered_cards.append(card_info)
 
-            # Tooltip on entire card and all its children
+            # Tooltip strictly on the info icon in the top right corner
             tt_func = lambda t=tile: self._build_tooltip_text(t)
-            tt = Tooltip(card_info["widgets"], tt_func, dark_mode=self.dark_mode)
+            tt = Tooltip(lbl_info, tt_func, dark_mode=self.dark_mode)
             self.tooltips.append(tt)
+
+            # Visual hover effects on the info icon itself
+            info_hover_fg = "#38bdf8" if self.dark_mode else "#0284c7"
+            info_normal_fg = self.c_fg_muted
+            lbl_info.bind("<Enter>", lambda e, l=lbl_info, c=info_hover_fg: l.configure(fg=c), add="+")
+            lbl_info.bind("<Leave>", lambda e, l=lbl_info, c=info_normal_fg: l.configure(fg=c), add="+")
+            # Prevent click on info icon from running tile or dragging
+            lbl_info.bind("<ButtonPress-1>", lambda e: "break", add="+")
+            lbl_info.bind("<ButtonRelease-1>", lambda e: "break", add="+")
+            lbl_info.bind("<MouseWheel>", self._on_mousewheel, add="+")
 
             # Bind mouse events to card and all child widgets
             self._bind_card_events(card_info)
@@ -1952,10 +2033,19 @@ class TileApp:
             self.render_tiles()
 
     def _on_escape_pressed(self, event=None):
+        self._hide_all_tooltips()
         if self.is_dragging:
             self._cancel_drag()
         elif self.search_query:
             self.clear_search()
+
+    def _on_root_unmap(self, event):
+        if event.widget == self.root:
+            self._hide_all_tooltips()
+
+    def _on_root_focus_out(self, event):
+        if event.widget == self.root:
+            self._hide_all_tooltips()
 
     def _cancel_drag(self):
         self.drag_source_idx = None
