@@ -955,3 +955,57 @@ def test_scrolling_and_deactivation_dismisses_tooltip(tk_root, tmp_path):
         sub_top.destroy()
 
 
+def test_get_icon_path_and_app_icon(tk_root, tmp_path):
+    """Verify that get_icon_path finds assets/icon.png and TileApp sets app_icon."""
+    icon_p = app.get_icon_path()
+    assert icon_p is not None
+    assert icon_p.exists()
+
+    sub_top = tk.Toplevel(tk_root)
+    tile_app = TileApp(sub_top)
+    assert tile_app.app_icon is not None
+    sub_top.destroy()
+
+
+def test_canvas_scrollregion_min_height(tk_root, tmp_path):
+    """Verify canvas scrollregion height never drops below canvas height to prevent empty top space."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.geometry("800x600")
+    tile_app = TileApp(sub_top)
+    sub_top.update()
+
+    tile_app._update_scrollregion()
+    sr = tile_app.canvas.cget("scrollregion")
+    sr_vals = [float(v) for v in sr.split()]
+    canvas_h = tile_app.canvas.winfo_height()
+
+    assert len(sr_vals) == 4
+    assert sr_vals[1] == 0.0
+    assert sr_vals[3] >= canvas_h
+    sub_top.destroy()
+
+
+def test_tooltip_hover_grace_period(tk_root):
+    """Verify Tooltip schedules hide and can cancel hide when re-entered."""
+    sub_top = tk.Toplevel(tk_root)
+    lbl = tk.Label(sub_top, text="i")
+    lbl.pack()
+    sub_top.update()
+
+    tt = app.Tooltip(lbl, lambda: "Description text")
+    tt.show()
+    assert tt.tip_window is not None
+
+    tt.on_leave()
+    assert tt.hide_after_id is not None
+    assert tt.tip_window is not None
+
+    tt.unschedule_hide()
+    assert tt.hide_after_id is None
+    assert tt.tip_window is not None
+
+    tt.hide()
+    assert tt.tip_window is None
+    sub_top.destroy()
+
+
