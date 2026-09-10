@@ -3,6 +3,11 @@
 Wszystkie istotne zmiany w projekcie Kafelki są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.1.1] - 2026-09-10
+
+### Dodano
+- **Nowa ikona aplikacji (2K)**: Wygenerowano dedykowaną, nowoczesną ikonę 3D Fluent Design w rozdzielczości 2K (`assets/icon.png`) reprezentującą siatkę kafelków z motywami akrylowego szkła i neonowego podświetlenia.
+
 ## [1.1.0] - 2026-09-10
 
 ### Dodano
