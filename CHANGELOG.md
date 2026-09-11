@@ -3,6 +3,16 @@
 Wszystkie istotne zmiany w projekcie WinTiles są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.2.2] - 2026-09-11
+
+### Poprawiono
+- **Jednolity układ kafelków i eliminacja pustej przestrzeni w trybie jasnym**:
+  - Wyczyszczono pozostałości konfiguracji kolumn (`columnconfigure`) w Tkinterze przed każdym ponownym renderowaniem siatki, zapobiegając blokowaniu pustych kolumn o wadze `weight=1` i `uniform="col"`.
+  - Skorygowano próg kalkulacji liczby kolumn z `canvas_width // 215` na `canvas_width // 200`, gwarantując stabilne 4 kolumny w oknie domyślnym (900x560 px) zarówno w motywie jasnym, jak i ciemnym.
+  - Wyeliminowano niepożądane zawijanie kafelków do 3 kolumn oraz powstawanie pustej przestrzeni po prawej stronie i na dole okna.
+- **Rozszerzenie testów automatycznych**:
+  - Dodano testy `test_grid_column_cleanup_on_column_change` oraz `test_light_and_dark_mode_column_parity` weryfikujące czyszczenie nieużywanych wag kolumn oraz pełną spójność układu siatki w obu motywach.
+
 ## [1.2.1] - 2026-09-11
 
 ### Poprawiono

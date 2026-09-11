@@ -5,6 +5,17 @@
   "sort_by": "date_newest",
   "tiles": [
     {
+      "name": "ScreenShot - path to clipboard",
+      "action_type": "ps1",
+      "target": "D:\\Git\\skrypty\\sciezka_screenshot.ps1",
+      "color": "#64748b",
+      "description": "",
+      "use_count": 1,
+      "created_at": "2026-09-11T10:33:32.664095",
+      "last_used": "2026-09-11T10:34:47.737682",
+      "order": 14
+    },
+    {
       "name": "vault",
       "action_type": "path",
       "target": "D:\\Git\\knowledge-vault",
