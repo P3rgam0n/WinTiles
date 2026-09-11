@@ -3,6 +3,17 @@
 Wszystkie istotne zmiany w projekcie WinTiles są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.2.1] - 2026-09-11
+
+### Poprawiono
+- **Prawidłowe wyświetlanie podglądu celu akcji w podtytule kafelka (`get_target_preview`)**:
+  - Usunięto nadpisywanie podtytułu kafelka przez pole `description`. Podtytuł (drugi wiersz karty) zawsze poprawnie prezentuje skróconą ścieżkę, plik lub URL celu (`target`).
+- **Wyświetlanie opisu w dymku (Tooltip) na ikonie „ⓘ”**:
+  - Opis kafelka (`description`) jest prezentowany wyłącznie po najechaniu kursorem myszy na ikonę informacyjną „ⓘ”.
+  - Zjechanie kursorem z ikony „ⓘ” powoduje zniknięcie dymku.
+- **Rozszerzenie testów automatycznych**:
+  - Zaktualizowano testy formatowania podglądu celu oraz dodano testy weryfikujące zachowanie dymka (Tooltip) i niezmienność podtytułu przy obecności opisu.
+
 ## [1.2.0] - 2026-09-10
 
 ### Zmieniono

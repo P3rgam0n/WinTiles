@@ -429,10 +429,7 @@ def format_datetime_display(iso_str):
         return str(iso_str)[:16].replace("T", " ")
 
 
-def get_target_preview(action_type, target, description=""):
-    if description and description.strip():
-        desc = description.strip()
-        return desc if len(desc) <= 30 else desc[:27] + "..."
+def get_target_preview(action_type, target):
     target = target.strip()
     if action_type == "url":
         clean = target.replace("https://", "").replace("http://", "").rstrip("/")
@@ -1789,7 +1786,7 @@ class TileApp:
             )
             lbl_badge.pack(side="left", padx=(0, 4))
 
-            sub_text = get_target_preview(action_type, tile.get("target", ""), tile.get("description", ""))
+            sub_text = get_target_preview(action_type, tile.get("target", ""))
             lbl_sub = tk.Label(
                 bot_row,
                 text=sub_text,
