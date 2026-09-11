@@ -464,18 +464,25 @@ class Tooltip:
 
         for w in self.widgets:
             w.bind("<Enter>", self.schedule, add="+")
+            w.bind("<Motion>", self.on_motion, add="+")
             w.bind("<Leave>", self.on_leave, add="+")
             w.bind("<ButtonPress>", self.hide, add="+")
             w.bind("<Destroy>", lambda e: self.hide(), add="+")
 
     def schedule(self, event=None):
         self.unschedule_hide()
+        if self.tip_window:
+            return
         self.unschedule()
         if not self.anchor_widget:
             return
         if Tooltip.active_tooltip and Tooltip.active_tooltip is not self:
             Tooltip.active_tooltip.hide()
-        self.after_id = self.anchor_widget.after(150, self.show)
+        self.after_id = self.anchor_widget.after(60, self.show)
+
+    def on_motion(self, event=None):
+        if not self.tip_window and not self.after_id:
+            self.schedule()
 
     def unschedule(self):
         if self.after_id and self.anchor_widget:
@@ -497,9 +504,35 @@ class Tooltip:
         self.unschedule()
         if self.tip_window and self.anchor_widget:
             self.unschedule_hide()
-            self.hide_after_id = self.anchor_widget.after(150, self.hide)
+            self.hide_after_id = self.anchor_widget.after(120, self.check_pointer_and_hide)
         else:
             self.hide()
+
+    def check_pointer_and_hide(self):
+        if not self.tip_window or not self.anchor_widget:
+            return
+        try:
+            if not self.anchor_widget.winfo_exists():
+                self.hide()
+                return
+            px, py = self.anchor_widget.winfo_pointerxy()
+            ax = self.anchor_widget.winfo_rootx()
+            ay = self.anchor_widget.winfo_rooty()
+            aw = self.anchor_widget.winfo_width()
+            ah = self.anchor_widget.winfo_height()
+            if ax <= px <= ax + aw and ay <= py <= ay + ah:
+                return
+
+            if self.tip_window.winfo_exists():
+                tx = self.tip_window.winfo_rootx()
+                ty = self.tip_window.winfo_rooty()
+                tw = self.tip_window.winfo_width()
+                th = self.tip_window.winfo_height()
+                if tx <= px <= tx + tw and ty <= py <= ty + th:
+                    return
+        except tk.TclError:
+            pass
+        self.hide()
 
     def show(self, event=None):
         self.unschedule_hide()
@@ -537,11 +570,8 @@ class Tooltip:
             return
 
         self.tip_window = tw = tk.Toplevel(root)
+        tw.wm_withdraw()
         tw.wm_overrideredirect(True)
-        try:
-            tw.transient(root)
-        except tk.TclError:
-            pass
         try:
             tw.wm_attributes("-topmost", True)
         except tk.TclError:
@@ -578,20 +608,22 @@ class Tooltip:
         label.bind("<ButtonPress>", lambda e: self.hide(), add="+")
 
         tw.update_idletasks()
-        tip_w = tw.winfo_width()
-        tip_h = tw.winfo_height()
+        tip_w = tw.winfo_reqwidth()
+        tip_h = tw.winfo_reqheight()
 
         x = anchor_rx + anchor_w - tip_w
-        y = anchor_ry + anchor_h + 2
+        y = anchor_ry + anchor_h + 4
 
         if x < 10:
             x = max(10, anchor_rx)
         if x + tip_w > screen_width - 10:
             x = screen_width - tip_w - 10
         if y + tip_h > screen_height - 10:
-            y = max(10, anchor_ry - tip_h - 2)
+            y = max(10, anchor_ry - tip_h - 4)
 
-        tw.wm_geometry(f"+{x}+{y}")
+        tw.wm_geometry(f"{tip_w}x{tip_h}+{x}+{y}")
+        tw.wm_deiconify()
+        tw.lift()
 
     def hide(self, event=None):
         self.unschedule_hide()

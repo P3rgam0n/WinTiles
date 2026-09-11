@@ -8,9 +8,11 @@ Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a pro
 ### Poprawiono
 - **Prawidłowe wyświetlanie podglądu celu akcji w podtytule kafelka (`get_target_preview`)**:
   - Usunięto nadpisywanie podtytułu kafelka przez pole `description`. Podtytuł (drugi wiersz karty) zawsze poprawnie prezentuje skróconą ścieżkę, plik lub URL celu (`target`).
-- **Wyświetlanie opisu w dymku (Tooltip) na ikonie „ⓘ”**:
-  - Opis kafelka (`description`) jest prezentowany wyłącznie po najechaniu kursorem myszy na ikonę informacyjną „ⓘ”.
-  - Zjechanie kursorem z ikony „ⓘ” powoduje zniknięcie dymku.
+- **Niezawodne wyświetlanie i pozycjonowanie dymku (Tooltip) na ikonie „ⓘ”**:
+  - Opis kafelka (`description`) jest prezentowany w responsywnym dymku natychmiast po najechaniu kursorem myszy na ikonę informacyjną „ⓘ” (opóźnienie zoptymalizowane do 60ms).
+  - Wyeliminowano błąd niewidoczności dymku na Windows poprzez usunięcie flagi `transient` na oknie typu `overrideredirect`, wymuszenie `wm_attributes("-topmost", True)` oraz wywołanie sekwencji `deiconify()` i `lift()`.
+  - Dodano precyzyjną weryfikację pozycji kursora (`winfo_pointerxy`), dzięki czemu dymek nie znika przypadkowo podczas płynnego przesuwania kursora nad ikoną „ⓘ” lub samym dymkiem.
+  - Zjechanie kursorem poza obszar ikony „ⓘ” i dymka powoduje jego natychmiastowe ukrycie.
 - **Rozszerzenie testów automatycznych**:
   - Zaktualizowano testy formatowania podglądu celu oraz dodano testy weryfikujące zachowanie dymka (Tooltip) i niezmienność podtytułu przy obecności opisu.
 
