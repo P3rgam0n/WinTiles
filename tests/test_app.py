@@ -217,11 +217,13 @@ def test_sorting_modes(tk_root):
 
 
 def test_target_preview_formatting():
-    """Verify get_target_preview formats short labels cleanly."""
+    """Verify get_target_preview formats short labels cleanly based on action_type and target."""
     assert get_target_preview("url", "https://console.cloud.google.com/vertex-ai") == "console.cloud.google.com/..."
+    assert get_target_preview("url", "https://google.com") == "google.com"
     assert get_target_preview("path", "C:\\Users\\cuksy\\Desktop\\MyFolder") == "MyFolder"
     assert get_target_preview("exe", "C:\\Tools\\App.exe") == "App.exe"
-    assert get_target_preview("url", "https://google.com", description="Custom Desc") == "Custom Desc"
+    assert get_target_preview("ps1", "D:\\Git\\skrypty\\sciezka.ps1") == "sciezka.ps1"
+    assert get_target_preview("clipboard", "Wklejony tekst") == "Wklejony tekst"
 
 
 def test_date_formatting():
@@ -1113,6 +1115,102 @@ def test_tooltip_cases_a_b_c_d_e(tk_root, tmp_path):
         app.PRIMARY_CONFIG_FILE = old_primary
         app.FALLBACK_CONFIG_FILE = old_fallback
         sub_top.destroy()
+
+
+def test_card_subtitle_retains_target_with_description(tk_root, tmp_path):
+    """Verify that tile subtitle displays target preview even when description is present."""
+    cfg_file = tmp_path / "tiles_target_test.json"
+    cfg_data = {
+        "tiles": [
+            {
+                "name": "Ścieżki",
+                "action_type": "ps1",
+                "target": r"D:\Git\skrypty\sciezka.ps1",
+                "description": "to jest opis sciezek hahahahaha",
+            },
+            {
+                "name": "GIT",
+                "action_type": "path",
+                "target": r"D:\Git",
+                "description": "",
+            },
+        ]
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        sub_top.update()
+
+        cards = tile_app.rendered_cards
+        assert len(cards) == 2
+
+        # Card 0: "Ścieżki" has target "sciezka.ps1" and description "to jest opis sciezek hahahahaha"
+        card_sciezki = cards[0]
+        lbl_sub_sciezki = card_sciezki["widgets"][8]  # lbl_sub is 8th widget in widgets list
+        assert lbl_sub_sciezki.cget("text") == "sciezka.ps1"
+        assert card_sciezki["lbl_info"] is not None
+
+        # Card 1: "GIT" has target "D:\Git" -> "Git"
+        card_git = cards[1]
+        lbl_sub_git = card_git["widgets"][8]
+        assert lbl_sub_git.cget("text") == "Git"
+        assert card_git["lbl_info"] is None
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tooltip_interactive_show_hide(tk_root):
+    """Verify Tooltip show, hide, schedule, and on_leave operations."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.deiconify()
+    lbl = tk.Label(sub_top, text="ⓘ")
+    lbl.pack()
+    sub_top.update()
+
+    try:
+        tt = app.Tooltip(lbl, lambda: "Przykładowy opis dymku", dark_mode=False)
+
+        # Initial state: no popup
+        assert tt.tip_window is None
+
+        # Show tooltip directly
+        tt.show()
+        sub_top.update()
+        assert tt.tip_window is not None
+        assert tt.tip_window.winfo_exists()
+        assert app.Tooltip.active_tooltip is tt
+
+        # Hide tooltip directly
+        tt.hide()
+        sub_top.update()
+        assert tt.tip_window is None
+        assert app.Tooltip.active_tooltip is None
+
+        # Schedule show
+        tt.schedule()
+        assert tt.after_id is not None
+        sub_top.update()
+        tt.show()
+        assert tt.tip_window is not None
+
+        # on_leave hides the tooltip
+        tt.on_leave()
+        if tt.hide_after_id:
+            lbl.after_cancel(tt.hide_after_id)
+        tt.hide()
+        assert tt.tip_window is None
+    finally:
+        sub_top.destroy()
+
 
 
 

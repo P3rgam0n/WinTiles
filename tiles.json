@@ -1,140 +1,19 @@
 {
   "always_on_top": false,
   "dark_mode": true,
-  "language": "en",
-  "sort_by": "manual",
+  "language": "pl",
+  "sort_by": "date_newest",
   "tiles": [
     {
-      "name": "ZIKK",
-      "action_type": "chrome_profile",
-      "target": "C:\\Users\\cuksy\\AppData\\Local\\Google\\Chrome\\User Data\\Default",
-      "color": "#804040",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:14:20",
-      "last_used": "",
-      "order": 0
-    },
-    {
-      "name": "VERTEX AI",
-      "action_type": "url",
-      "target": "https://console.cloud.google.com/vertex-ai/studio/multimodal;mode=prompt?model=gemini-3.1-flash-image-preview&project=gen-lang-client-0055193883&authuser=1&hl=pl",
-      "color": "#4f46e5",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:13:20",
-      "last_used": "",
-      "order": 1
-    },
-    {
-      "name": "CASTILLO",
-      "action_type": "chrome_profile",
-      "target": "C:\\Users\\cuksy\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 11",
-      "color": "#10b981",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:15:20",
-      "last_used": "",
-      "order": 2
-    },
-    {
-      "name": "NOBLEMEDIA",
+      "name": "vault",
       "action_type": "path",
-      "target": "I:\\NOBLEMEDIA",
-      "color": "#d97706",
+      "target": "D:\\Git\\knowledge-vault",
+      "color": "#e11d48",
       "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:16:20",
-      "last_used": "",
-      "order": 3
-    },
-    {
-      "name": "BUDUJ FOLDERY",
-      "action_type": "ps1",
-      "target": "I:\\MOJA FIRMA\\00_START_HERE\\New-FirmaProjectStructure.ps1",
-      "color": "#06b6d4",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:17:20",
-      "last_used": "",
-      "order": 4
-    },
-    {
-      "name": "MOJA FIRMA",
-      "action_type": "path",
-      "target": "I:\\MOJA FIRMA",
-      "color": "#8b5cf6",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:18:20",
-      "last_used": "",
-      "order": 5
-    },
-    {
-      "name": "AI GENEROWANIE",
-      "action_type": "exe",
-      "target": "D:\\Git\\fast_Banana\\compilator\\dist\\VertexAIImageApp.exe",
-      "color": "#ec4899",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:19:20",
-      "last_used": "",
-      "order": 6
-    },
-    {
-      "name": "PROMPTLANDIA",
-      "action_type": "ps1",
-      "target": "C:\\Users\\cuksy\\Desktop\\start-promptlandia.ps1",
-      "color": "#f43f5e",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:20:20",
-      "last_used": "",
-      "order": 7
-    },
-    {
-      "name": "GIT",
-      "action_type": "path",
-      "target": "D:\\Git",
-      "color": "#f97316",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:21:20",
-      "last_used": "",
-      "order": 8
-    },
-    {
-      "name": "Ścieżki",
-      "action_type": "ps1",
-      "target": "D:\\Git\\skrypty\\sciezka.ps1",
-      "color": "#84cc16",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:22:20",
-      "last_used": "",
-      "order": 9
-    },
-    {
-      "name": "POWERSHELL",
-      "action_type": "exe",
-      "target": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-      "color": "#0078d4",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:23:20",
-      "last_used": "",
-      "order": 10
-    },
-    {
-      "name": "FreeCad",
-      "action_type": "exe",
-      "target": "C:\\Users\\cuksy\\Downloads\\FreeCAD_1.1.1-Windows-x86_64-py311\\FreeCAD.exe",
-      "color": "#7c3aed",
-      "description": "",
-      "use_count": 0,
-      "created_at": "2023-11-14T23:24:20",
-      "last_used": "",
-      "order": 11
+      "use_count": 1,
+      "created_at": "2023-11-14T23:26:20",
+      "last_used": "2026-09-10T22:37:56.912524",
+      "order": 13
     },
     {
       "name": "WSL Ścieżki",
@@ -148,15 +27,136 @@
       "order": 12
     },
     {
-      "name": "vault",
-      "action_type": "path",
-      "target": "D:\\Git\\architecture-ai\\knowledge-vault",
-      "color": "#e11d48",
+      "name": "FreeCad",
+      "action_type": "exe",
+      "target": "C:\\Users\\cuksy\\Downloads\\FreeCAD_1.1.1-Windows-x86_64-py311\\FreeCAD.exe",
+      "color": "#7c3aed",
       "description": "",
       "use_count": 0,
-      "created_at": "2023-11-14T23:26:20",
+      "created_at": "2023-11-14T23:24:20",
       "last_used": "",
-      "order": 13
+      "order": 11
+    },
+    {
+      "name": "POWERSHELL",
+      "action_type": "exe",
+      "target": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "color": "#0078d4",
+      "description": "",
+      "use_count": 3,
+      "created_at": "2023-11-14T23:23:20",
+      "last_used": "2026-09-10T22:38:05.495475",
+      "order": 10
+    },
+    {
+      "name": "Ścieżki",
+      "action_type": "ps1",
+      "target": "D:\\Git\\skrypty\\sciezka.ps1",
+      "color": "#84cc16",
+      "description": "to jest opis sciezek hahahahaha",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:22:20",
+      "last_used": "",
+      "order": 9
+    },
+    {
+      "name": "GIT",
+      "action_type": "path",
+      "target": "D:\\Git",
+      "color": "#f97316",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:21:20",
+      "last_used": "",
+      "order": 8
+    },
+    {
+      "name": "PROMPTLANDIA",
+      "action_type": "ps1",
+      "target": "C:\\Users\\cuksy\\Desktop\\start-promptlandia.ps1",
+      "color": "#f43f5e",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:20:20",
+      "last_used": "",
+      "order": 7
+    },
+    {
+      "name": "AI GENEROWANIE",
+      "action_type": "exe",
+      "target": "D:\\Git\\fast_Banana\\compilator\\dist\\VertexAIImageApp.exe",
+      "color": "#ec4899",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:19:20",
+      "last_used": "",
+      "order": 6
+    },
+    {
+      "name": "MOJA FIRMA",
+      "action_type": "path",
+      "target": "I:\\MOJA FIRMA",
+      "color": "#8b5cf6",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:18:20",
+      "last_used": "",
+      "order": 5
+    },
+    {
+      "name": "BUDUJ FOLDERY",
+      "action_type": "ps1",
+      "target": "I:\\MOJA FIRMA\\00_START_HERE\\New-FirmaProjectStructure.ps1",
+      "color": "#06b6d4",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:17:20",
+      "last_used": "",
+      "order": 4
+    },
+    {
+      "name": "NOBLEMEDIA",
+      "action_type": "path",
+      "target": "I:\\NOBLEMEDIA",
+      "color": "#d97706",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:16:20",
+      "last_used": "",
+      "order": 3
+    },
+    {
+      "name": "CASTILLO",
+      "action_type": "chrome_profile",
+      "target": "C:\\Users\\cuksy\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 11",
+      "color": "#10b981",
+      "description": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:15:20",
+      "last_used": "",
+      "order": 0
+    },
+    {
+      "name": "ZIKK",
+      "action_type": "chrome_profile",
+      "target": "C:\\Users\\cuksy\\AppData\\Local\\Google\\Chrome\\User Data\\Default",
+      "color": "#804040",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:14:20",
+      "last_used": "",
+      "order": 1
+    },
+    {
+      "name": "VERTEX AI",
+      "action_type": "url",
+      "target": "https://console.cloud.google.com/vertex-ai/studio/multimodal;mode=prompt?model=gemini-3.1-flash-image-preview&project=gen-lang-client-0055193883&authuser=1&hl=pl",
+      "color": "#4f46e5",
+      "description": "",
+      "use_count": 0,
+      "created_at": "2023-11-14T23:13:20",
+      "last_used": "",
+      "order": 2
     }
   ]
 }
