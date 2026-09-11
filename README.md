@@ -44,7 +44,13 @@ W prawym górnym rogu dostępna jest lista wyboru trybu sortowania:
 13. `chrome_profile` – uruchamia Google Chrome na wskazanym profilu użytkownika (lub aktywuje już otwarte okno tego profilu).
 14. `command` – uruchamia dowolne polecenie w konsoli Windows.
 
-### 5. Nowoczesny interfejs UI
+### 5. Płynna regulacja przezroczystości okna (Ctrl + Rolka myszy)
+- Przy aktywnym oknie aplikacji przytrzymanie klawisza **Ctrl** i ruch kółkiem myszy (**rolka w przód / w tył**) płynnie zmienia przezroczystość całego okna w zakresie od **100% do 10%** (z krokiem 5%).
+- Aktualny poziom przezroczystości jest natychmiast sygnalizowany powiadomieniem toast na dolnym pasku (np. `Przezroczystość okna: 85%`).
+- Wybrany poziom przezroczystości jest automatycznie zapamiętywany w pliku konfiguracyjnym.
+
+### 6. Nowoczesny interfejs UI
+- **Podpowiedzi (Tooltips) w nagłówku**: najechanie kursorem myszy na dowolną ikonę paska górnego (np. przypięcie okna **📌**, przełącznik trybu ciemnego/jasnego **🌙/☀️**, czyszczenie wyszukiwania **✕**, dodawanie kafelka) wyświetla czytelną informację o jej funkcji w wybranym języku.
 - **Pasek tytułu Windows 11**: natywny ciemny pasek tytułowy w trybie Dark Mode dzięki integracji z Windows Desktop Window Manager (DWM).
 - **Karty kafelków**: nowoczesne karty z kolorowym paskiem akcentowym, czytelną ikoną emoji, wytłuszczoną nazwą, etykietą typu akcji, subtelnym podtytułem oraz licznikiem użyć (`⚡`).
 - **Płynne przewijanie (Scrollable Canvas)**: responsywna siatka dostosowująca liczbę kolumn (od 1 do 6) do szerokości okna z obsługą kółka myszy.
@@ -59,7 +65,7 @@ W prawym górnym rogu dostępna jest lista wyboru trybu sortowania:
   - Przycisk „Wybierz plik...” / „Wybierz folder...” automatycznie dostosowany do typu akcji.
   - Paleta 12 gotowych, nowoczesnych kolorów akcentowych + próbnik systemowy.
   - Dynamiczna podpowiedź wyjaśniająca składnię dla wybranego typu akcji.
-- **Powiadomienia Toast**: delikatne komunikaty statusowe w dolnym pasku (np. „Skopiowano do schowka”, „Przeniesiono kafelek”, „Zapisano ustawienia”).
+- **Powiadomienia Toast**: delikatne komunikaty statusowe w dolnym pasku (np. „Skopiowano do schowka”, „Przeniesiono kafelek”, „Zapisano ustawienia”, „Przezroczystość okna: ...”).
 
 ---
 

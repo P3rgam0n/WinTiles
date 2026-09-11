@@ -183,7 +183,7 @@ ACTION_DEFS = {
 
 TRANSLATIONS = {
     LANG_EN: {
-        "app_title": "Tiles - Work Helper",
+        "app_title": "WinTiles - Work Helper",
         "search_placeholder": "Search tiles (name, type, target)...",
         "add_tile": "+ Add Tile",
         "save": "Save",
@@ -203,7 +203,7 @@ TRANSLATIONS = {
         "sort_date_newest": "Date added (newest)",
         "sort_date_oldest": "Date added (oldest)",
         "sort_action_type": "Action type",
-        "hint_mouse": "LMB: run | Hold & drag: move | RMB: menu",
+        "hint_mouse": "LMB: run | Hold & drag: move | RMB: menu | Ctrl+Wheel: opacity",
         "run": "Run",
         "edit": "Edit",
         "duplicate": "Duplicate",
@@ -236,6 +236,12 @@ TRANSLATIONS = {
         "tt_used": "Used: {} times",
         "tt_added": "Added: {}",
         "tt_last_used": "Last used: {}",
+        "tt_topmost": "Always on top (keep window above other windows)",
+        "tt_dark_mode": "Toggle theme (dark / light mode)",
+        "tt_clear_search": "Clear search filter",
+        "tt_add_tile": "Add a new tile",
+        "tt_save": "Save layout and settings",
+        "opacity_toast": "Window opacity: {}%",
         "error": "Error",
         "error_name_empty": "Tile name cannot be empty.",
         "error_action_type": "Invalid action type.",
@@ -280,7 +286,7 @@ TRANSLATIONS = {
         "sort_date_newest": "Data dodania (najnowsze)",
         "sort_date_oldest": "Data dodania (najstarsze)",
         "sort_action_type": "Typ akcji",
-        "hint_mouse": "LPM: uruchom | Przytrzymaj LPM: przenieś | PPM: menu",
+        "hint_mouse": "LPM: uruchom | Przytrzymaj LPM: przenieś | PPM: menu | Ctrl+Rolka: przezroczystość",
         "run": "Uruchom",
         "edit": "Edytuj",
         "duplicate": "Duplikuj",
@@ -313,6 +319,12 @@ TRANSLATIONS = {
         "tt_used": "Użyto: {} razy",
         "tt_added": "Dodano: {}",
         "tt_last_used": "Ostatnio: {}",
+        "tt_topmost": "Zawsze na wierzchu (utrzymuj okno nad innymi oknami)",
+        "tt_dark_mode": "Przełącz motyw (ciemny / jasny)",
+        "tt_clear_search": "Wyczyść pole wyszukiwania",
+        "tt_add_tile": "Dodaj nowy kafelek",
+        "tt_save": "Zapisz układ i ustawienia",
+        "opacity_toast": "Przezroczystość okna: {}%",
         "error": "Błąd",
         "error_name_empty": "Nazwa kafelka nie może być pusta.",
         "error_action_type": "Nieprawidłowy typ akcji.",
@@ -579,9 +591,10 @@ class Tooltip:
 
         Tooltip.active_tooltip = self
 
-        bg_color = "#27272a" if self.dark_mode else "#ffffff"
-        fg_color = "#f4f4f5" if self.dark_mode else "#0f172a"
-        border_color = "#3f3f46" if self.dark_mode else "#cbd5e1"
+        is_dark = self.dark_mode() if callable(self.dark_mode) else bool(self.dark_mode)
+        bg_color = "#27272a" if is_dark else "#ffffff"
+        fg_color = "#f4f4f5" if is_dark else "#0f172a"
+        border_color = "#3f3f46" if is_dark else "#cbd5e1"
 
         frame = tk.Frame(tw, background=border_color, bd=1)
         frame.pack(fill="both", expand=True)
@@ -996,6 +1009,7 @@ class TileApp:
         self.config_file = PRIMARY_CONFIG_FILE
         self.tooltips = []
         self.rendered_cards = []
+        self.header_tooltips = []
 
         # Application Icon
         try:
@@ -1018,6 +1032,8 @@ class TileApp:
         self.tiles = config["tiles"]
         self.always_on_top = bool(config["always_on_top"])
         self.dark_mode = bool(config.get("dark_mode", False))
+        self.opacity = float(config.get("opacity", 1.0))
+        self.opacity = max(0.10, min(1.0, self.opacity))
         self.lang = config.get("language", LANG_EN)
         if self.lang not in (LANG_EN, LANG_PL):
             self.lang = LANG_EN
@@ -1043,6 +1059,10 @@ class TileApp:
         self.var_search.trace_add("write", lambda *args: self.on_search_changed())
 
         self.root.attributes("-topmost", self.always_on_top)
+        try:
+            self.root.attributes("-alpha", self.opacity)
+        except Exception:
+            pass
         self.root.minsize(760, 480)
         self.root.geometry("900x560")
 
@@ -1239,6 +1259,20 @@ class TileApp:
         self.lbl_status_count = tk.Label(self.status_bar, font=("Segoe UI", 9))
         self.lbl_status_count.pack(side="right")
 
+        # Header tooltips
+        self.header_tooltips = [
+            Tooltip(self.btn_topmost, lambda: self.t["tt_topmost"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_dark_mode, lambda: self.t["tt_dark_mode"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_clear_search, lambda: self.t["tt_clear_search"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_add_tile, lambda: self.t["tt_add_tile"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_save, lambda: self.t["tt_save"], dark_mode=lambda: self.dark_mode),
+        ]
+
+        # Ctrl + MouseWheel transparency controls
+        self.root.bind_all("<Control-MouseWheel>", self._on_ctrl_mousewheel)
+        self.root.bind_all("<Control-Button-4>", lambda e: self._on_ctrl_mousewheel(type("Event", (), {"delta": 120, "state": getattr(e, "state", 0)})()))
+        self.root.bind_all("<Control-Button-5>", lambda e: self._on_ctrl_mousewheel(type("Event", (), {"delta": -120, "state": getattr(e, "state", 0)})()))
+
     def _update_scrollregion(self):
         bbox = self.canvas.bbox("all")
         if bbox:
@@ -1266,10 +1300,32 @@ class TileApp:
 
     def _on_mousewheel(self, event):
         self._hide_all_tooltips()
+        if getattr(event, "state", 0) & 0x0004 or getattr(event, "state", 0) & 4:
+            return self._on_ctrl_mousewheel(event)
         bbox = self.canvas.bbox("all")
         content_h = (bbox[3] - bbox[1]) if bbox else 0
         if content_h > self.canvas.winfo_height():
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_ctrl_mousewheel(self, event):
+        self._hide_all_tooltips()
+        delta = getattr(event, "delta", 0)
+        if not delta:
+            return "break"
+        steps = delta / 120.0
+        change = steps * 0.05
+        new_opacity = round(self.opacity + change, 2)
+        new_opacity = max(0.10, min(1.0, new_opacity))
+        if new_opacity != self.opacity:
+            self.opacity = new_opacity
+            try:
+                self.root.attributes("-alpha", self.opacity)
+            except Exception:
+                pass
+            pct = int(round(self.opacity * 100))
+            self.show_toast(self.t["opacity_toast"].format(pct))
+            self._autosave()
+        return "break"
 
     def show_toast(self, message, duration_ms=2500):
         if self.toast_timer:
@@ -1504,6 +1560,7 @@ class TileApp:
                 return {
                     "always_on_top": False,
                     "dark_mode": False,
+                    "opacity": 1.0,
                     "language": LANG_EN,
                     "sort_by": "manual",
                     "tiles": tiles,
@@ -1514,6 +1571,11 @@ class TileApp:
             tiles = self._validate_tiles(data.get("tiles"))
             always_on_top = bool(data.get("always_on_top", False))
             dark_mode = bool(data.get("dark_mode", False))
+            try:
+                opacity = float(data.get("opacity", 1.0))
+                opacity = max(0.10, min(1.0, round(opacity, 2)))
+            except (ValueError, TypeError):
+                opacity = 1.0
             language = str(data.get("language", LANG_EN))
             sort_by = str(data.get("sort_by", "manual"))
             if language not in (LANG_EN, LANG_PL):
@@ -1524,6 +1586,7 @@ class TileApp:
                 return {
                     "always_on_top": always_on_top,
                     "dark_mode": dark_mode,
+                    "opacity": opacity,
                     "language": language,
                     "sort_by": sort_by,
                     "tiles": tiles,
@@ -1553,6 +1616,7 @@ class TileApp:
             payload = {
                 "always_on_top": False,
                 "dark_mode": False,
+                "opacity": 1.0,
                 "language": LANG_EN,
                 "sort_by": "manual",
                 "tiles": list(DEFAULT_TILES),
@@ -1586,6 +1650,7 @@ class TileApp:
         return {
             "always_on_top": bool(self.var_topmost.get()),
             "dark_mode": bool(self.var_dark_mode.get()),
+            "opacity": round(float(self.opacity), 2),
             "language": self.lang,
             "sort_by": self.current_sort,
             "tiles": self.tiles,
@@ -1607,6 +1672,8 @@ class TileApp:
     def _hide_all_tooltips(self):
         Tooltip.hide_active()
         for tt in getattr(self, "tooltips", []):
+            tt.hide()
+        for tt in getattr(self, "header_tooltips", []):
             tt.hide()
 
     def on_sort_selected(self, event=None):
@@ -1853,7 +1920,7 @@ class TileApp:
             if lbl_info is not None:
                 # Tooltip strictly on the info icon in the top right corner displaying the description
                 tt_func = lambda t=tile: self._build_tooltip_text(t)
-                tt = Tooltip(lbl_info, tt_func, dark_mode=self.dark_mode)
+                tt = Tooltip(lbl_info, tt_func, dark_mode=lambda: self.dark_mode)
                 self.tooltips.append(tt)
 
                 # Visual hover effects on the info icon itself

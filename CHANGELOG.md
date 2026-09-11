@@ -3,6 +3,25 @@
 Wszystkie istotne zmiany w projekcie WinTiles są dokumentowane w tym pliku.
 Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
 
+## [1.3.0] - 2026-09-11
+
+### Dodano
+- **Podpowiedzi (Tooltips) po najechaniu kursorem na ikony nagłówka**:
+  - Dodano estetyczne dymki podpowiedzi informujące o funkcjach przycisków w górnym pasku aplikacji:
+    - Przycisk przypięcia okna (**📌**): *„Zawsze na wierzchu (utrzymuj okno nad innymi oknami)”* / *„Always on top (keep window above other windows)”*.
+    - Przełącznik motywu (**🌙 / ☀️**): *„Przełącz motyw (ciemny / jasny)”* / *„Toggle theme (dark / light mode)”*.
+    - Przycisk czyszczenia wyszukiwania (**✕**): *„Wyczyść pole wyszukiwania”* / *„Clear search filter”*.
+    - Przycisk dodawania kafelka: *„Dodaj nowy kafelek”* / *„Add a new tile”*.
+    - Przycisk zapisu: *„Zapisz układ i ustawienia”* / *„Save layout and settings”*.
+  - Dymki automatycznie dostosowują kolorystykę do aktywnego motywu (jasny / ciemny) oraz reagują na zmianę języka interfejsu (PL / EN).
+- **Płynna regulacja przezroczystości okna (`Ctrl + Rolka myszy`)**:
+  - Dodano możliwość sterowania poziomem przezroczystości okna WinTiles w procentach w zakresie od 100% do 10% (z krokiem 5%).
+  - Przytrzymanie klawisza **Ctrl** i ruch kółkiem myszy w przód (w górę) zwiększa krycie (do 100%), a ruch w tył (w dół) zwiększa przezroczystość (do bezpiecznego minimum 10%).
+  - Zmiana przezroczystości natychmiast wyświetla wskaźnik procentowy w powiadomieniu toast na dolnym pasku (np. `Przezroczystość okna: 85%`).
+  - Poziom przezroczystości jest automatycznie zapamiętywany w pliku konfiguracyjnym `tiles.json` pod kluczem `opacity` i przywracany przy kolejnym uruchomieniu aplikacji.
+- **Rozszerzenie testów automatycznych**:
+  - Dodano testy `test_header_tooltips_and_language_switching`, `test_opacity_ctrl_mousewheel_adjustment` oraz `test_opacity_config_parsing_and_saving` gwarantujące 100% poprawności działania podpowiedzi, skrótu klawiszowego, klamrowania wartości i trwałości zapisu.
+
 ## [1.2.2] - 2026-09-11
 
 ### Poprawiono

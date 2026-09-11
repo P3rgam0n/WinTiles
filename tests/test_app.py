@@ -1306,6 +1306,159 @@ def test_light_and_dark_mode_column_parity(tk_root):
             sub_top.destroy()
 
 
+def test_header_tooltips_and_language_switching(tk_root):
+    """Verify that header buttons have tooltips attached and update correctly across language changes."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Path(tmpdir) / "tiles.json"
+        app.PRIMARY_CONFIG_FILE = cfg
+        app.FALLBACK_CONFIG_FILE = cfg
+
+        try:
+            tile_app = TileApp(sub_top)
+            assert len(tile_app.header_tooltips) >= 5
+
+            # Find tooltips for topmost and dark_mode buttons
+            topmost_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_topmost)
+            dark_mode_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_dark_mode)
+            clear_search_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_clear_search)
+
+            # Test Polish language tooltips
+            tile_app.lang = LANG_PL
+            assert topmost_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_topmost"]
+            assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_dark_mode"]
+            assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_clear_search"]
+
+            # Test English language tooltips
+            tile_app.lang = LANG_EN
+            assert topmost_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_topmost"]
+            assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_dark_mode"]
+            assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_clear_search"]
+        finally:
+            app.PRIMARY_CONFIG_FILE = old_primary
+            app.FALLBACK_CONFIG_FILE = old_fallback
+            sub_top.destroy()
+
+
+def test_opacity_ctrl_mousewheel_adjustment(tk_root):
+    """Verify that Ctrl+MouseWheel adjusts window opacity with bounds [0.10, 1.00] and displays toast feedback."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Path(tmpdir) / "tiles.json"
+        app.PRIMARY_CONFIG_FILE = cfg
+        app.FALLBACK_CONFIG_FILE = cfg
+
+        try:
+            tile_app = TileApp(sub_top)
+            tile_app.lang = LANG_PL
+            tile_app.opacity = 1.0
+
+            class MockScrollDownEvent:
+                delta = -120
+                state = 0x0004
+
+            class MockScrollUpEvent:
+                delta = 120
+                state = 0x0004
+
+            # Scroll down decreases opacity by 5%
+            tile_app._on_ctrl_mousewheel(MockScrollDownEvent())
+            assert tile_app.opacity == pytest.approx(0.95, abs=0.001)
+            assert "95%" in tile_app.lbl_status_toast.cget("text")
+
+            # Scroll down multiple times towards min clamp
+            for _ in range(30):
+                tile_app._on_ctrl_mousewheel(MockScrollDownEvent())
+
+            # Min clamp is 0.10 (10%)
+            assert tile_app.opacity == pytest.approx(0.10, abs=0.001)
+            assert "10%" in tile_app.lbl_status_toast.cget("text")
+
+            # Scroll up increases opacity
+            tile_app._on_ctrl_mousewheel(MockScrollUpEvent())
+            assert tile_app.opacity == pytest.approx(0.15, abs=0.001)
+            assert "15%" in tile_app.lbl_status_toast.cget("text")
+
+            # Scroll up multiple times towards max clamp 1.0 (100%)
+            for _ in range(30):
+                tile_app._on_ctrl_mousewheel(MockScrollUpEvent())
+
+            assert tile_app.opacity == pytest.approx(1.0, abs=0.001)
+            assert "100%" in tile_app.lbl_status_toast.cget("text")
+
+            # Normal mousewheel with Ctrl pressed delegates to _on_ctrl_mousewheel
+            res = tile_app._on_mousewheel(MockScrollDownEvent())
+            assert res == "break"
+            assert tile_app.opacity == pytest.approx(0.95, abs=0.001)
+        finally:
+            app.PRIMARY_CONFIG_FILE = old_primary
+            app.FALLBACK_CONFIG_FILE = old_fallback
+            sub_top.destroy()
+
+
+def test_opacity_config_parsing_and_saving(tk_root):
+    """Verify opacity configuration is properly loaded, clamped, and saved in payload."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Path(tmpdir) / "tiles.json"
+        app.PRIMARY_CONFIG_FILE = cfg
+        app.FALLBACK_CONFIG_FILE = cfg
+
+        try:
+            tile_app = TileApp(sub_top)
+
+            # Test parsing with custom opacity
+            payload = {
+                "always_on_top": False,
+                "dark_mode": False,
+                "opacity": 0.85,
+                "tiles": [],
+            }
+            parsed = tile_app._parse_config_payload(payload)
+            assert parsed["opacity"] == 0.85
+
+            # Test parsing with out-of-range opacity (too low -> clamped to 0.10)
+            payload_low = {
+                "opacity": 0.01,
+                "tiles": [],
+            }
+            parsed_low = tile_app._parse_config_payload(payload_low)
+            assert parsed_low["opacity"] == 0.10
+
+            # Test parsing with out-of-range opacity (too high -> clamped to 1.0)
+            payload_high = {
+                "opacity": 1.5,
+                "tiles": [],
+            }
+            parsed_high = tile_app._parse_config_payload(payload_high)
+            assert parsed_high["opacity"] == 1.0
+
+            # Test building config payload
+            tile_app.opacity = 0.75
+            built = tile_app._build_config_payload()
+            assert built["opacity"] == 0.75
+        finally:
+            app.PRIMARY_CONFIG_FILE = old_primary
+            app.FALLBACK_CONFIG_FILE = old_fallback
+            sub_top.destroy()
+
+
+
 
 
 
