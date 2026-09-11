@@ -1212,6 +1212,101 @@ def test_tooltip_interactive_show_hide(tk_root):
         sub_top.destroy()
 
 
+def test_grid_column_cleanup_on_column_change(tk_root):
+    """Verify that reducing column count cleans up stale column weights/uniform settings."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.geometry("900x560")
+    sub_top.update()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Path(tmpdir) / "tiles.json"
+        app.PRIMARY_CONFIG_FILE = cfg
+        app.FALLBACK_CONFIG_FILE = cfg
+
+        try:
+            tile_app = TileApp(sub_top)
+            sub_top.update()
+
+            # Initially 4 columns
+            tile_app.current_cols = 4
+            tile_app.render_tiles()
+            sub_top.update()
+
+            for c in range(4):
+                info = tile_app.tiles_inner_frame.columnconfigure(c)
+                assert info.get("weight") == 1 or info.get("weight") == "1"
+                assert str(info.get("uniform")) == "col"
+
+            # Reduce to 3 columns
+            tile_app.current_cols = 3
+            tile_app.render_tiles()
+            sub_top.update()
+
+            for c in range(3):
+                info = tile_app.tiles_inner_frame.columnconfigure(c)
+                assert info.get("weight") == 1 or info.get("weight") == "1"
+                assert str(info.get("uniform")) == "col"
+
+            # Column 3 must have weight 0 and not belong to uniform group "col"
+            info3 = tile_app.tiles_inner_frame.columnconfigure(3)
+            assert info3.get("weight") == 0 or info3.get("weight") == "0"
+            assert not info3.get("uniform") or str(info3.get("uniform")) in ('""', '')
+        finally:
+            app.PRIMARY_CONFIG_FILE = old_primary
+            app.FALLBACK_CONFIG_FILE = old_fallback
+            sub_top.destroy()
+
+
+def test_light_and_dark_mode_column_parity(tk_root):
+    """Verify that light and dark mode compute equal column counts and consistent tile layout."""
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.geometry("900x560")
+    sub_top.update()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        cfg = Path(tmpdir) / "tiles.json"
+        app.PRIMARY_CONFIG_FILE = cfg
+        app.FALLBACK_CONFIG_FILE = cfg
+
+        try:
+            tile_app = TileApp(sub_top)
+            sub_top.update()
+
+            # Verify dark mode toggle parity
+            tile_app.dark_mode = False
+            tile_app.apply_theme()
+            sub_top.update()
+
+            class MockEvent:
+                width = 840
+
+            tile_app._on_canvas_configure(MockEvent())
+            sub_top.update()
+            light_cols = tile_app.current_cols
+
+            tile_app.dark_mode = True
+            tile_app.apply_theme()
+            sub_top.update()
+            tile_app._on_canvas_configure(MockEvent())
+            sub_top.update()
+            dark_cols = tile_app.current_cols
+
+            assert light_cols == 4
+            assert dark_cols == 4
+            assert light_cols == dark_cols
+        finally:
+            app.PRIMARY_CONFIG_FILE = old_primary
+            app.FALLBACK_CONFIG_FILE = old_fallback
+            sub_top.destroy()
+
+
+
 
 
 

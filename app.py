@@ -1257,7 +1257,7 @@ class TileApp:
         canvas_width = event.width
         self.canvas.itemconfig(self.inner_frame_id, width=canvas_width)
 
-        new_cols = max(1, min(6, canvas_width // 215))
+        new_cols = max(1, min(6, canvas_width // 200))
         if new_cols != self.current_cols:
             self.current_cols = new_cols
             self.render_tiles()
@@ -1672,6 +1672,8 @@ class TileApp:
             child.destroy()
 
         cols = self.current_cols
+        for i in range(max(10, cols + 4)):
+            self.tiles_inner_frame.columnconfigure(i, weight=0, uniform="")
         for i in range(cols):
             self.tiles_inner_frame.columnconfigure(i, weight=1, uniform="col")
 
