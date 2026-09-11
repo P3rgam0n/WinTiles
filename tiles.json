@@ -1,7 +1,7 @@
 {
   "always_on_top": false,
   "dark_mode": true,
-  "language": "pl",
+  "language": "en",
   "sort_by": "date_newest",
   "tiles": [
     {
@@ -130,7 +130,7 @@
       "action_type": "chrome_profile",
       "target": "C:\\Users\\cuksy\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 11",
       "color": "#10b981",
-      "description": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "description": "Profil castillooooooo",
       "use_count": 0,
       "created_at": "2023-11-14T23:15:20",
       "last_used": "",

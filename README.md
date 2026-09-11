@@ -15,7 +15,8 @@ Lekka, szybka i elegancka aplikacja desktopowa w Python/Tkinter pozwalająca na 
 ### 2. Dedykowany opis i inteligentny tooltip informacyjny („ⓘ”)
 - Każdy kafelek może posiadać opcjonalny opis (`Opis (opcjonalnie)` / `Description (optional)`).
 - Gdy kafelek ma zdefiniowany opis, w jego prawym górnym rogu wyświetla się estetyczna ikona informacyjna **„ⓘ”**.
-- Najechanie kursorem na ikonę **„ⓘ”** natychmiast wyświetla dymek podpowiedzi (tooltip) z wprowadzonym opisem.
+- Najechanie kursorem myszy na ikonę **„ⓘ”** natychmiast wyświetla dymek podpowiedzi (tooltip) z pełną treścią opisu. Po opuszczeniu obszaru ikony i dymku podpowiedź znika.
+- Podtytuł kafelka (dolna linia) zawsze czytelnie prezentuje skrócony podgląd celu/ścieżki (`target`), nie będąc przesłanianym przez opis.
 - Jeżeli opis jest pusty, zawiera wyłącznie białe znaki lub zostanie usunięty podczas edycji, ikona **„ⓘ”** nie jest renderowana, zachowując czystość i minimalizm interfejsu.
 
 ### 3. Sortowanie kafelków
