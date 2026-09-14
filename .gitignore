@@ -9,3 +9,4 @@ release/
 .pytest_cache/
 .~lock*
 .codex-tmp/
+scratch/
