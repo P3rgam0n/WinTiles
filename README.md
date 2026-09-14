@@ -1,117 +1,133 @@
-# WinTiles - nowoczesna nakładka do pracy (Windows 11)
+# WinTiles - Modern Windows 11 Desktop Productivity Launcher
 
-Lekka, szybka i elegancka aplikacja desktopowa w Python/Tkinter pozwalająca na błyskawiczne uruchamianie stron, folderów, programów, skryptów, poleceń WSL, edytora VS Code oraz kopiowanie przydatnych promptów i tekstów do schowka.
+A lightweight, fast, and elegant Python/Tkinter desktop application for Windows 11 that allows instant launching of websites, folders, applications, scripts, WSL commands, VS Code workspaces, and quick copying of AI prompts and snippets to the clipboard.
 
----
-
-## Nowości i możliwości aplikacji
-
-### 1. Przeciąganie i upuszczanie (Drag & Drop)
-- Wciśnij i przytrzymaj **LPM** na kafelku, aby go "złapać".
-- Podczas przeciągania kursor zmienia się na uchwyt, pojawia się półprzezroczysty miniaturowy podgląd przeciąganego kafelka, a kafelek docelowy podświetla się na błękitny kolor.
-- Upuszczenie na inny kafelek natychmiast przenosi kafelek na wskazaną pozycję.
-- Przeniesienie automatycznie przestawia tryb sortowania na „Kolejność własna” i zapisuje zmiany.
-
-### 2. Dedykowany opis i inteligentny tooltip informacyjny („ⓘ”)
-- Każdy kafelek może posiadać opcjonalny opis (`Opis (opcjonalnie)` / `Description (optional)`).
-- Gdy kafelek ma zdefiniowany opis, w jego prawym górnym rogu wyświetla się estetyczna ikona informacyjna **„ⓘ”**.
-- Najechanie kursorem myszy na ikonę **„ⓘ”** natychmiast wyświetla dymek podpowiedzi (tooltip) z pełną treścią opisu. Po opuszczeniu obszaru ikony i dymku podpowiedź znika.
-- Podtytuł kafelka (dolna linia) zawsze czytelnie prezentuje skrócony podgląd celu/ścieżki (`target`), nie będąc przesłanianym przez opis.
-- Jeżeli opis jest pusty, zawiera wyłącznie białe znaki lub zostanie usunięty podczas edycji, ikona **„ⓘ”** nie jest renderowana, zachowując czystość i minimalizm interfejsu.
-
-### 3. Sortowanie kafelków
-W prawym górnym rogu dostępna jest lista wyboru trybu sortowania:
-- **Kolejność własna (Manual)** – domyślna kolejność ułożona ręcznie przez użytkownika (metodą przeciągnij i upuść).
-- **Najczęściej używane (Most used)** – automatyczne sortowanie według licznika kliknięć/uruchomień (`use_count`).
-- **Ostatnio używane (Recently used)** – kafelki uruchamiane najświeżej pojawiają się na początku.
-- **Nazwa (A - Z)** oraz **Nazwa (Z - A)** – alfabetyczne sortowanie według nazwy (z obsługą polskich znaków diakrytycznych).
-- **Data dodania (najnowsze)** oraz **Data dodania (najstarsze)** – sortowanie chronologiczne.
-- **Typ akcji (Action type)** – grupowanie kafelków według rodzaju akcji.
-
-### 4. Rozbudowane typy akcji (14 rodzajów)
-1. `url` – otwiera stronę WWW w domyślnej przeglądarce (automatycznie uzupełnia `https://`).
-2. `path` – otwiera folder w Eksploratorze Windows.
-3. `file` – otwiera dowolny plik (PDF, dokument, obraz, arkusz) w powiązanym programie domyślnym.
-4. `exe` – uruchamia plik wykonywalny `.exe` (samodzielnie lub z argumentami).
-5. `ps1` – uruchamia skrypt PowerShell (`powershell.exe -NoProfile -ExecutionPolicy Bypass -File ...`).
-6. `python` – uruchamia skrypt Python (`.py`) bezpośrednio interpreterem Python.
-7. `bat` – uruchamia skrypt wsadowy Windows (`.bat` / `.cmd`).
-8. `terminal` – otwiera Windows Terminal (`wt.exe`) lub PowerShell we wskazanym folderze.
-9. `vscode` – otwiera wskazany folder lub plik w Visual Studio Code (`code "<ścieżka>"`).
-10. `wsl` – uruchamia polecenie bash lub terminal we wskazanym folderze w środowisku WSL (Linux).
-11. `clipboard` – kopiuje wprowadzony tekst (np. prompt AI, szablon, token, hasło) do schowka systemowego i wyświetla powiadomienie toast.
-12. `websearch` – wyszukuje podaną frazę bezpośrednio w Google.
-13. `chrome_profile` – uruchamia Google Chrome na wskazanym profilu użytkownika (lub aktywuje już otwarte okno tego profilu).
-14. `command` – uruchamia dowolne polecenie w konsoli Windows.
-
-### 5. Płynna regulacja przezroczystości okna (Ctrl + Rolka myszy)
-- Przy aktywnym oknie aplikacji przytrzymanie klawisza **Ctrl** i ruch kółkiem myszy (**rolka w przód / w tył**) płynnie zmienia przezroczystość całego okna w zakresie od **100% do 10%** (z krokiem 5%).
-- Aktualny poziom przezroczystości jest natychmiast sygnalizowany powiadomieniem toast na dolnym pasku (np. `Przezroczystość okna: 85%`).
-- Wybrany poziom przezroczystości jest automatycznie zapamiętywany w pliku konfiguracyjnym.
-
-### 6. Nowoczesny interfejs UI
-- **Podpowiedzi (Tooltips) w nagłówku**: najechanie kursorem myszy na dowolną ikonę paska górnego (np. przypięcie okna **📌**, przełącznik trybu ciemnego/jasnego **🌙/☀️**, czyszczenie wyszukiwania **✕**, dodawanie kafelka) wyświetla czytelną informację o jej funkcji w wybranym języku.
-- **Pasek tytułu Windows 11**: natywny ciemny pasek tytułowy w trybie Dark Mode dzięki integracji z Windows Desktop Window Manager (DWM).
-- **Karty kafelków**: nowoczesne karty z kolorowym paskiem akcentowym, czytelną ikoną emoji, wytłuszczoną nazwą, etykietą typu akcji, subtelnym podtytułem oraz licznikiem użyć (`⚡`).
-- **Płynne przewijanie (Scrollable Canvas)**: responsywna siatka dostosowująca liczbę kolumn (od 1 do 6) do szerokości okna z obsługą kółka myszy.
-- **Wyszukiwarka na żywo (Live Search)**: błyskawiczne filtrowanie kafelków w czasie rzeczywistym po nazwie, typie akcji, ścieżce/celu lub opisie z przyciskiem szybkiego czyszczenia `✕`.
-- **Menu kontekstowe pod PPM**:
-  - 🚀 Uruchom
-  - ✏️ Edytuj
-  - 📋 Duplikuj (błyskawiczne klonowanie kafelka)
-  - 🔄 Resetuj licznik użyć
-  - 🗑️ Usuń
-- **Wygodne okno edycji/dodawania**:
-  - Przycisk „Wybierz plik...” / „Wybierz folder...” automatycznie dostosowany do typu akcji.
-  - Paleta 12 gotowych, nowoczesnych kolorów akcentowych + próbnik systemowy.
-  - Dynamiczna podpowiedź wyjaśniająca składnię dla wybranego typu akcji.
-- **Powiadomienia Toast**: delikatne komunikaty statusowe w dolnym pasku (np. „Skopiowano do schowka”, „Przeniesiono kafelek”, „Zapisano ustawienia”, „Przezroczystość okna: ...”).
+![WinTiles Application Preview](assets/preview.png)
 
 ---
 
-## Uruchomienie
+## ⚡ Quick Start & Running the Application
 
-1. Wymagany Python 3.8+ (testowano na Python 3.13).
-2. Uruchomienie:
-   - Dwuklik w `run.bat`, lub
-   - Polecenie w terminalu:
+1. **Requirements**:
+   - Python 3.8+ (tested on Python 3.13).
+   - Standard Python libraries (`tkinter`, `ctypes`, `subprocess`, `json`, `pathlib`).
+
+2. **Launch Options**:
+   - Double-click `run.bat`, or
+   - Run in terminal:
      ```powershell
      python app.py
      ```
 
-## Testy automatyczne
+---
 
-Projekt posiada pełny zestaw testów jednostkowych i integracyjnych:
+## Key Features
+
+### 1. Drag & Drop Reordering
+- Click and hold **LMB** on any tile to pick it up.
+- While dragging, a semi-transparent miniature preview follows the cursor, and the target tile highlights in blue.
+- Dropping onto another tile instantly reorders the list.
+- Reordering automatically sets the sorting mode to **Custom order** and saves your preferences.
+
+### 2. Dedicated Description & Smart Info Tooltip („ⓘ”)
+- Each tile can have an optional description (`Description (optional)`).
+- When a description is set, an elegant **„ⓘ”** info icon appears in the top-right corner of the tile.
+- Hovering over the **„ⓘ”** icon displays a tooltip with the complete description text.
+- The tile subtitle cleanly displays a shortened preview of the target path/URL without clutter.
+- If no description is provided, the **„ⓘ”** icon is hidden to maintain a clean interface.
+
+### 3. Flexible Tile Sorting
+Choose from multiple sorting modes in the top-right dropdown:
+- **Custom order (Manual)** – Drag & drop custom ordering.
+- **Most used** – Automatic sorting based on click/execution counter (`use_count`).
+- **Recently used** – Most recently launched tiles appear at the top.
+- **Name (A - Z)** & **Name (Z - A)** – Alphabetical sorting.
+- **Date added (newest / oldest)** – Chronological sorting.
+- **Action type** – Grouping tiles by action category.
+
+### 4. 14 Action Types Supported
+1. `url` – Open web pages in your default browser.
+2. `path` – Open folders in Windows Explorer.
+3. `file` – Open documents or files in default applications.
+4. `exe` – Run executable files (`.exe`).
+5. `ps1` – Execute PowerShell scripts (`.ps1`).
+6. `python` – Execute Python scripts (`.py`).
+7. `bat` – Execute batch files (`.bat` / `.cmd`).
+8. `terminal` – Launch Windows Terminal or PowerShell in a specific directory.
+9. `vscode` – Open files or folders directly in Visual Studio Code.
+10. `wsl` – Run Linux commands or bash shells via WSL.
+11. `clipboard` – Copy prompts, snippets, or tokens to the clipboard with toast feedback.
+12. `websearch` – Execute Google web searches directly in your browser.
+13. `chrome_profile` – Launch or switch to specific Google Chrome profiles.
+14. `command` – Execute custom Windows shell commands.
+
+### 5. Smooth Window Transparency (Ctrl + Mouse Wheel)
+- Hold **Ctrl** and scroll the **mouse wheel** to adjust window opacity between **100% and 10%**.
+- Real-time percentage indicator appears on the status bar (e.g. `Window opacity: 85%`).
+- Opacity settings persist across application restarts.
+
+### 6. Modern Windows 11 UI
+- **Header Tooltips**: Hover over control buttons (topmost **📌**, dark mode **🌙/☀️**, clear search **✕**, add tile, save) for quick contextual hints.
+- **Windows 11 Dark Title Bar**: Native DWM integration for seamless dark title bars.
+- **Live Search**: Instant real-time tile filtering by name, action type, target path, or description.
+- **Right-Click Context Menu**:
+  - 🚀 Run
+  - ✏️ Edit
+  - 📋 Duplicate
+  - 🔄 Reset usage count
+  - 🗑️ Delete
+
+---
+
+## Running from Source
+
+1. Requirements: Python 3.8+ (tested on Python 3.13).
+2. Launch via:
+   - Double-clicking `run.bat`, or
+   - Terminal command:
+     ```powershell
+     python app.py
+     ```
+
+## Automated Testing
+
+Run the full unit and integration test suite:
 ```powershell
 pytest -v
 ```
 
 ---
 
-## Format konfiguracji (`tiles.json`)
+## Configuration Format (`tiles.json`)
 
-Plik `tiles.json` zapisywany jest w katalogu aplikacji (lub w `%APPDATA%\WinTiles\tiles.json` / `~/.wintiles/tiles.json` z automatycznym fallbackiem do `%APPDATA%\Kafelki` dla zachowania pełnej kompatybilności wstecznej). Przykładowa struktura:
+Settings and tiles are saved to `tiles.json`. Sample clean configuration:
 
 ```json
 {
   "always_on_top": false,
   "dark_mode": true,
-  "language": "pl",
+  "language": "en",
   "sort_by": "manual",
   "tiles": [
     {
-      "name": "VERTEX AI",
+      "name": "Google Search",
       "action_type": "url",
-      "target": "https://console.cloud.google.com/vertex-ai/studio/multimodal",
-      "color": "#4f46e5",
-      "description": "Studio Gemini",
-      "use_count": 14,
-      "created_at": "2026-01-01T12:00:00",
-      "last_used": "2026-09-10T20:00:00",
+      "target": "https://www.google.com",
+      "color": "#0284c7",
+      "description": "Default web search engine",
+      "use_count": 5,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "2026-09-14T11:00:00",
       "order": 0
     }
   ]
 }
 ```
 
-Aplikacja jest w 100% kompatybilna wstecz ze starszym formatem `tiles.json` – automatycznie uzupełnia brakujące pola bez utraty żadnych istniejących danych.
+---
+
+## Author & License
+
+- **Author**: Michał Jura
+- **GitHub**: [https://github.com/P3rgam0n](https://github.com/P3rgam0n)
+- **Repository**: [https://github.com/P3rgam0n/WinTiles](https://github.com/P3rgam0n/WinTiles)

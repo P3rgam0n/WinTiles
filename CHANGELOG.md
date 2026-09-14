@@ -1,148 +1,34 @@
-# Dziennik Zmian (Changelog)
+# Changelog
 
-Wszystkie istotne zmiany w projekcie WinTiles są dokumentowane w tym pliku.
-Format bazuje na [Keep a Changelog](https://keepachangelog.com/pl/1.0.0/), a projekt stosuje [Semantic Versioning](https://semver.org/lang/pl/).
+All notable changes to the WinTiles project will be documented in this file.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0] - 2026-09-11
+## [1.0.0] - 2026-09-14
 
-### Dodano
-- **Podpowiedzi (Tooltips) po najechaniu kursorem na ikony nagłówka**:
-  - Dodano estetyczne dymki podpowiedzi informujące o funkcjach przycisków w górnym pasku aplikacji:
-    - Przycisk przypięcia okna (**📌**): *„Zawsze na wierzchu (utrzymuj okno nad innymi oknami)”* / *„Always on top (keep window above other windows)”*.
-    - Przełącznik motywu (**🌙 / ☀️**): *„Przełącz motyw (ciemny / jasny)”* / *„Toggle theme (dark / light mode)”*.
-    - Przycisk czyszczenia wyszukiwania (**✕**): *„Wyczyść pole wyszukiwania”* / *„Clear search filter”*.
-    - Przycisk dodawania kafelka: *„Dodaj nowy kafelek”* / *„Add a new tile”*.
-    - Przycisk zapisu: *„Zapisz układ i ustawienia”* / *„Save layout and settings”*.
-  - Dymki automatycznie dostosowują kolorystykę do aktywnego motywu (jasny / ciemny) oraz reagują na zmianę języka interfejsu (PL / EN).
-- **Płynna regulacja przezroczystości okna (`Ctrl + Rolka myszy`)**:
-  - Dodano możliwość sterowania poziomem przezroczystości okna WinTiles w procentach w zakresie od 100% do 10% (z krokiem 5%).
-  - Przytrzymanie klawisza **Ctrl** i ruch kółkiem myszy w przód (w górę) zwiększa krycie (do 100%), a ruch w tył (w dół) zwiększa przezroczystość (do bezpiecznego minimum 10%).
-  - Zmiana przezroczystości natychmiast wyświetla wskaźnik procentowy w powiadomieniu toast na dolnym pasku (np. `Przezroczystość okna: 85%`).
-  - Poziom przezroczystości jest automatycznie zapamiętywany w pliku konfiguracyjnym `tiles.json` pod kluczem `opacity` i przywracany przy kolejnym uruchomieniu aplikacji.
-- **Rozszerzenie testów automatycznych**:
-  - Dodano testy `test_header_tooltips_and_language_switching`, `test_opacity_ctrl_mousewheel_adjustment` oraz `test_opacity_config_parsing_and_saving` gwarantujące 100% poprawności działania podpowiedzi, skrótu klawiszowego, klamrowania wartości i trwałości zapisu.
-
-## [1.2.2] - 2026-09-11
-
-### Poprawiono
-- **Jednolity układ kafelków i eliminacja pustej przestrzeni w trybie jasnym**:
-  - Wyczyszczono pozostałości konfiguracji kolumn (`columnconfigure`) w Tkinterze przed każdym ponownym renderowaniem siatki, zapobiegając blokowaniu pustych kolumn o wadze `weight=1` i `uniform="col"`.
-  - Skorygowano próg kalkulacji liczby kolumn z `canvas_width // 215` na `canvas_width // 200`, gwarantując stabilne 4 kolumny w oknie domyślnym (900x560 px) zarówno w motywie jasnym, jak i ciemnym.
-  - Wyeliminowano niepożądane zawijanie kafelków do 3 kolumn oraz powstawanie pustej przestrzeni po prawej stronie i na dole okna.
-- **Rozszerzenie testów automatycznych**:
-  - Dodano testy `test_grid_column_cleanup_on_column_change` oraz `test_light_and_dark_mode_column_parity` weryfikujące czyszczenie nieużywanych wag kolumn oraz pełną spójność układu siatki w obu motywach.
-
-## [1.2.1] - 2026-09-11
-
-### Poprawiono
-- **Prawidłowe wyświetlanie podglądu celu akcji w podtytule kafelka (`get_target_preview`)**:
-  - Usunięto nadpisywanie podtytułu kafelka przez pole `description`. Podtytuł (drugi wiersz karty) zawsze poprawnie prezentuje skróconą ścieżkę, plik lub URL celu (`target`).
-- **Niezawodne wyświetlanie i pozycjonowanie dymku (Tooltip) na ikonie „ⓘ”**:
-  - Opis kafelka (`description`) jest prezentowany w responsywnym dymku natychmiast po najechaniu kursorem myszy na ikonę informacyjną „ⓘ” (opóźnienie zoptymalizowane do 60ms).
-  - Wyeliminowano błąd niewidoczności dymku na Windows poprzez usunięcie flagi `transient` na oknie typu `overrideredirect`, wymuszenie `wm_attributes("-topmost", True)` oraz wywołanie sekwencji `deiconify()` i `lift()`.
-  - Dodano precyzyjną weryfikację pozycji kursora (`winfo_pointerxy`), dzięki czemu dymek nie znika przypadkowo podczas płynnego przesuwania kursora nad ikoną „ⓘ” lub samym dymkiem.
-  - Zjechanie kursorem poza obszar ikony „ⓘ” i dymka powoduje jego natychmiastowe ukrycie.
-- **Rozszerzenie testów automatycznych**:
-  - Zaktualizowano testy formatowania podglądu celu oraz dodano testy weryfikujące zachowanie dymka (Tooltip) i niezmienność podtytułu przy obecności opisu.
-
-## [1.2.0] - 2026-09-10
-
-### Zmieniono
-- **Rebranding na WinTiles**:
-  - Zaktualizowano oficjalną nazwę aplikacji, nagłówek interfejsu UI, tytuły okien oraz AppUserModelID (`wintiles.app.v1`).
-  - Zaktualizowano domyślny katalog konfiguracyjny do `%APPDATA%\WinTiles` oraz `~/.wintiles` z zachowaniem 100% kompatybilności wstecznej z dotychczasowym `%APPDATA%\Kafelki` i `~/.kafelki`.
-- **Usunięcie workflowów i artefaktów `.exe`**:
-  - Usunięto plik specyfikacji PyInstaller (`app.spec`), binaria `app.exe` oraz katalogi `build/` i `dist/`.
-  - Rozszerzono `.gitignore` o zabezpieczenie przed plikami `*.exe`, `*.spec`, `build/`, `dist/` i `release/`.
-  - Aplikacja działa bezpośrednio jako lekki skrypt Python (`run.bat` / `python app.py`).
-- **Uporządkowanie struktury repozytorium**:
-  - Usunięto przestarzałe i rozbieżne kopie skryptów (`app_exe.py`, `app — kopia.py`) oraz niepotrzebne pliki tymczasowe `.codex-tmp`.
-  - Uproszczono i wyczyszczono logikę wykrywania ścieżek zasobów i konfiguracji w `app.py`.
-
-### Poprawiono
-- **Naprawa `Description (optional)` i tooltipa informacyjnego („ⓘ”)**:
-  - Ściśle powiązano widoczność ikony „ⓘ” z obecnością opisu kafelka: ikona pojawia się wyłącznie wtedy, gdy kafelek posiada niepusty opis.
-  - Hover na ikonie „ⓘ” wyświetla zdefiniowany opis kafelka.
-  - Kafelki z pustym opisem lub zawierające wyłącznie spacje/białe znaki nie renderują ikony „ⓘ” i nie tworzą pustego tooltipa.
-  - Edycja opisu kafelka natychmiast odświeża treść dymku, a wyczyszczenie opisu natychmiast usuwa ikonę „ⓘ” z widoku kafelka.
-  - Dodano pełen zestaw testów automatycznych weryfikujących przypadki A, B, C, D i E cyklu życia opisu i tooltipa.
-
-## [1.1.3] - 2026-09-10
-
-### Poprawiono
-- **Wyświetlanie opisu podpowiedzi w trybie pełnoekranowym (Maximized / Zoomed)**:
-  - Poprawiono warunek sprawdzający stan okna `root.wm_state()`, który wcześniej odrzucał pokazywanie tooltipu gdy okno było zmaksymalizowane (`zoomed`). Podpowiedzi na ikonie "ⓘ" działają teraz prawidłowo zarówno w trybie okienkowym, jak i pełnoekranowym.
-- **Wyeliminowanie wolnego pola u góry okna**:
-  - Wzbogacono `_update_scrollregion` o automatyczne zerowanie pozycji pionowej (`yview_moveto(0)`) w sytuacjach gdy rozmiar zawartości mieści się w widocznym obszarze canvasu.
-
-## [1.1.2] - 2026-09-10
-
-### Poprawiono
-- **Wyświetlanie opisu podpowiedzi po najechaniu na "ⓘ"**:
-  - Naprawiono płynność i natychmiastowe zamykanie podpowiedzi (tooltip) przy najechaniu na ikonę "ⓘ".
-  - Dodano krótkie opóźnienie ochronne (grace period) przy opuszczaniu ikony "ⓘ" oraz obsługę najechania myszą bezpośrednio na okienko podpowiedzi.
-- **Wyeliminowanie wolnego pola u góry okna przy przeciąganiu kafelka (Drag & Drop)**:
-  - Naprawiono automatyczne przewijanie canvasu — zablokowano ujemne i przedwczesne przewijanie u góry okna gdy wysokość zawartości jest mniejsza lub równa wysokości okna canvas.
-- **Ładowanie ikony aplikacji (`assets/icon.png`)**:
-  - Podpięto ładowanie dedykowanej ikony `assets/icon.png` do okna aplikacji (`root.iconphoto`) oraz identyfikatora AppUserModelID dla paska zadań Windows.
-
-## [1.1.1] - 2026-09-10
-
-### Dodano
-- **Nowa ikona aplikacji (2K)**: Wygenerowano dedykowaną, nowoczesną ikonę 3D Fluent Design w rozdzielczości 2K (`assets/icon.png`) reprezentującą siatkę kafelków z motywami akrylowego szkła i neonowego podświetlenia.
-
-## [1.1.0] - 2026-09-10
-
-### Dodano
-- **Dedykowana ikona informacji "ⓘ" na kafelkach**:
-  - W prawym górnym rogu każdego kafelka dodano dyskretną ikonę informacji "ⓘ".
-  - Podpowiedzi (tooltips) wyświetlają się wyłącznie po najechaniu kursorem myszy na ikonę "ⓘ" w prawym górnym rogu, eliminując niepożądane wyskakiwanie tooltipów przy zwykłym poruszaniu się po kafelkach.
-  - Płynny efekt najechania kursorem na ikonę "ⓘ" (akcentowy kolor podświetlenia) oraz kursor `hand2`.
-  - Kliknięcie w ikonę "ⓘ" nie uruchamia akcji kafelka ani nie inicjuje przeciągania (pełna izolacja zdarzeń myszy).
-  - Inteligentne pozycjonowanie dymku podpowiedzi wyrównane do prawej krawędzi ikony z automatycznym zabezpieczeniem przed wyjściem poza ekran.
-
-### Poprawiono
-- **Natychmiastowe zamykanie podpowiedzi**:
-  - Naprawiono błąd zacinających się podpowiedzi — po opuszczeniu ikony "ⓘ" podpowiedź znika natychmiastowo bez żadnych opóźnień i bez pozostawania na ekranie.
-- **Eliminacja „duchów” tooltipów na pulpicie i przy minimalizacji**:
-  - Rozwiązano problem pozostawania dymków na pulpicie Windows po zminimalizowaniu aplikacji lub przełączeniu okien (ustawienie `transient` względem okna głównego).
-  - Automatyczne natychmiastowe niszczenie wszystkich tooltipów przy zdarzeniach minimalizacji (`<Unmap>`), utraty aktywności (`<Deactivate>`), utraty fokusu (`<FocusOut>`), przewijaniu kółkiem myszy (`<MouseWheel>`), zmianie rozmiaru canvasu oraz wciśnięciu klawisza Escape.
-  - Zaimplementowano gwarancję pojedynczej aktywnej podpowiedzi (`active_tooltip`), wykluczając możliwość jednoczesnego zablokowania wielu okienek na pulpicie.
-  - Naprawiono błąd w `_hide_all_tooltips`, który przedwcześnie czyścił referencje do zarządzanych obiektów tooltipów.
-
-## [1.0.0] - 2026-09-10
-
-### Dodano
-- **Przeciąganie i upuszczanie LPM (Drag & Drop)**:
-  - Możliwość chwycenia kafelka lewym przyciskiem myszy i przeciągnięcia na inną pozycję na siatce.
-  - Półprzezroczysty miniaturowy podgląd przeciąganego kafelka (drag ghost) podążający za kursorem.
-  - Podświetlanie kafelka docelowego oraz inteligentne wykrywanie najbliższego kafelka w odstępach siatki (eliminacja martwych stref).
-  - Automatyczne przewijanie canvasu przy przeciąganiu przy górnej i dolnej krawędzi.
-  - Obsługa klawisza Escape do natychmiastowego anulowania aktywnego przeciągania.
-- **Sortowanie kafelków**:
-  - 8 trybów sortowania: Kolejność własna, Najczęściej używane, Ostatnio używane, Nazwa (A - Z), Nazwa (Z - A), Data dodania (najnowsze), Data dodania (najstarsze), Typ akcji.
-  - Pełne wsparcie dla polskiej alfabetycznej kolacji znaków diakrytycznych (ą, ć, ę, ł, ń, ó, ś, ź, ż).
-  - Zachowywanie i natychmiastowe przywracanie kolejności własnej (`order`) po przełączaniu trybów sortowania.
-  - Automatyczne aplikowanie sortowania przy uruchomieniu aplikacji.
-- **Rozszerzone typy akcji (14 rodzajów)**:
-  - Dodano akcje: `file` (domyślny program systemowy), `bat` (skrypt wsadowy), `terminal` (Windows Terminal / PowerShell w folderze), `vscode` (otwarcie folderu/pliku w VS Code), `wsl` (uruchomienie konsoli lub polecenia w WSL), `clipboard` (kopiowanie promptu/tekstu do schowka z powiadomieniem toast), `websearch` (wyszukiwanie w Google).
-  - Obsługa ścieżek w cudzysłowach (np. z systemowego „Kopiuj jako ścieżkę”).
-  - Bezpieczne uruchamianie skryptów Python ze skompilowanego pliku wykonywalnego (`.exe`).
-- **Nowoczesny interfejs UI**:
-  - Ciemny pasek tytułowy Windows 11 poprzez Desktop Window Manager (DWM).
-  - Nowoczesne karty kafelków z kolorowymi paskami akcentowymi, czytelną typografią, etykietami typów i licznikami użyć.
-  - Płynny, niefikający efekt najechania kursorem (hover) obejmujący całą kartę i elementy potomne.
-  - Prawidłowo działające podpowiedzi (tooltips) wyświetlające się przy najechaniu na dowolny element kafelka (tekst, ikona, tło).
-  - Wyszukiwarka na żywo ze stanem pustym i szybkim czyszczeniem.
-  - Menu kontekstowe pod PPM (uruchom, edytuj, duplikuj, resetuj licznik, usuń).
-  - Pasek statusu z powiadomieniami toast i licznikiem kafelków.
-  - Responsywna siatka z obsługą kółka myszy.
-- **Zestaw 21 testów automatycznych** (`tests/test_app.py`) weryfikujący wszystkie funkcje, sortowanie, kolację, drag&drop, migrację i obsługę błędów.
-
-### Poprawiono
-- Naprawiono błąd braku sortowania na starcie aplikacji przy skonfigurowanym trybie innym niż manualny.
-- Naprawiono błąd braku wyświetlania tooltipów po najechaniu na etykiety tekstowe wewnątrz kafelka.
-- Naprawiono błąd anulowania upuszczenia przy puszczeniu przycisku myszy w odstępach między kafelkami.
-- Naprawiono błąd utraty kolejności manualnej po posortowaniu kafelków.
-- Naprawiono uruchamianie skryptów `.py` ze spakowanego pliku `.exe`.
-- Naprawiono otwieranie ścieżek zawierających cudzysłowy w akcjach `path`, `file`, `chrome_profile`, `wsl`.
+### Added
+- **Initial Public Release** of WinTiles desktop productivity launcher for Windows 11.
+- **14 Supported Action Types**:
+  - `url` – Open web pages in default browser.
+  - `path` – Open folders in Windows Explorer.
+  - `file` – Open documents or files in default applications.
+  - `exe` – Run executable files (`.exe`).
+  - `ps1` – Execute PowerShell scripts (`.ps1`).
+  - `python` – Execute Python scripts (`.py`).
+  - `bat` – Execute batch files (`.bat` / `.cmd`).
+  - `terminal` – Launch Windows Terminal or PowerShell in a specific directory.
+  - `vscode` – Open files or folders directly in Visual Studio Code.
+  - `wsl` – Run Linux commands or bash shells via WSL.
+  - `clipboard` – Copy prompts, templates, or tokens to the clipboard with toast feedback.
+  - `websearch` – Execute Google web searches directly in browser.
+  - `chrome_profile` – Launch or switch to specific Google Chrome profiles.
+  - `command` – Execute custom Windows shell commands.
+- **Interactive UI & Drag & Drop**:
+  - Drag & Drop tile reordering with semi-transparent drag preview.
+  - Tile descriptions with hover info tooltips („ⓘ”).
+  - Real-time live search filter by tile name, action type, target path, or description.
+  - Smooth window opacity adjustment via `Ctrl + Mouse Wheel` (100% to 10%).
+  - Dark and Light theme support with native Windows 11 DWM title bar integration.
+  - Bilingual interface support (English & Polish).
+- **Quality & Security**:
+  - Fully sanitized default configuration with public example tiles.
+  - Comprehensive automated unit test suite.

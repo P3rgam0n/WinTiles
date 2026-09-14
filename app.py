@@ -241,6 +241,8 @@ TRANSLATIONS = {
         "tt_clear_search": "Clear search filter",
         "tt_add_tile": "Add a new tile",
         "tt_save": "Save layout and settings",
+        "author_credit": "Michał Jura",
+        "author_link_tt": "GitHub: https://github.com/P3rgam0n",
         "opacity_toast": "Window opacity: {}%",
         "error": "Error",
         "error_name_empty": "Tile name cannot be empty.",
@@ -324,6 +326,8 @@ TRANSLATIONS = {
         "tt_clear_search": "Wyczyść pole wyszukiwania",
         "tt_add_tile": "Dodaj nowy kafelek",
         "tt_save": "Zapisz układ i ustawienia",
+        "author_credit": "Michał Jura",
+        "author_link_tt": "GitHub: https://github.com/P3rgam0n",
         "opacity_toast": "Przezroczystość okna: {}%",
         "error": "Błąd",
         "error_name_empty": "Nazwa kafelka nie może być pusta.",
@@ -1065,6 +1069,7 @@ class TileApp:
             pass
         self.root.minsize(760, 480)
         self.root.geometry("900x560")
+        self._set_app_icon()
 
         self.current_cols = 4
 
@@ -1079,6 +1084,25 @@ class TileApp:
             self.sort_tiles(self.current_sort, autosave=False, show_toast=False)
         else:
             self.sort_tiles("manual", autosave=False, show_toast=False)
+
+    def _set_app_icon(self):
+        base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+        ico_path = base_dir / "assets" / "icon.ico"
+        png_path = base_dir / "assets" / "icon.png"
+
+        if ico_path.exists():
+            try:
+                self.root.iconbitmap(default=str(ico_path))
+                return
+            except Exception:
+                pass
+        if png_path.exists():
+            try:
+                img = tk.PhotoImage(file=str(png_path))
+                self.root.iconphoto(True, img)
+                self._icon_ref = img
+            except Exception:
+                pass
 
     @property
     def t(self):
@@ -1259,6 +1283,14 @@ class TileApp:
         self.lbl_status_count = tk.Label(self.status_bar, font=("Segoe UI", 9))
         self.lbl_status_count.pack(side="right")
 
+        self.lbl_author = tk.Label(
+            self.status_bar,
+            font=("Segoe UI", 9, "underline"),
+            cursor="hand2",
+        )
+        self.lbl_author.pack(side="right", padx=(0, 16))
+        self.lbl_author.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/P3rgam0n"))
+
         # Header tooltips
         self.header_tooltips = [
             Tooltip(self.btn_topmost, lambda: self.t["tt_topmost"], dark_mode=lambda: self.dark_mode),
@@ -1266,6 +1298,7 @@ class TileApp:
             Tooltip(self.btn_clear_search, lambda: self.t["tt_clear_search"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_add_tile, lambda: self.t["tt_add_tile"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_save, lambda: self.t["tt_save"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.lbl_author, lambda: self.t["author_link_tt"], dark_mode=lambda: self.dark_mode),
         ]
 
         # Ctrl + MouseWheel transparency controls
@@ -1354,6 +1387,7 @@ class TileApp:
         self.btn_save.configure(text=t["save"])
         self.lbl_sort.configure(text=t["sort_label"])
         self.lbl_status_hint.configure(text=t["hint_mouse"])
+        self.lbl_author.configure(text=f"👤 {t['author_credit']}")
 
         sort_display_values = [
             t["sort_manual"],
@@ -1477,6 +1511,8 @@ class TileApp:
         self.status_bar.configure(bg=self.c_surface)
         self.lbl_status_hint.configure(bg=self.c_surface, fg=self.c_fg_muted)
         self.lbl_status_count.configure(bg=self.c_surface, fg=self.c_fg_muted)
+        fg_author = "#38bdf8" if self.dark_mode else "#0284c7"
+        self.lbl_author.configure(bg=self.c_surface, fg=fg_author)
 
         # Style ttk widgets
         if self.dark_mode:
