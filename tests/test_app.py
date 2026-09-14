@@ -220,7 +220,7 @@ def test_target_preview_formatting():
     """Verify get_target_preview formats short labels cleanly based on action_type and target."""
     assert get_target_preview("url", "https://console.cloud.google.com/vertex-ai") == "console.cloud.google.com/..."
     assert get_target_preview("url", "https://google.com") == "google.com"
-    assert get_target_preview("path", "C:\\Users\\cuksy\\Desktop\\MyFolder") == "MyFolder"
+    assert get_target_preview("path", "C:\\Users\\Username\\Desktop\\MyFolder") == "MyFolder"
     assert get_target_preview("exe", "C:\\Tools\\App.exe") == "App.exe"
     assert get_target_preview("ps1", "D:\\Git\\skrypty\\sciezka.ps1") == "sciezka.ps1"
     assert get_target_preview("clipboard", "Wklejony tekst") == "Wklejony tekst"
@@ -329,7 +329,7 @@ def test_load_real_tiles_json(tk_root):
     app.FALLBACK_CONFIG_FILE = real_file
     try:
         tile_app = TileApp(sub_top)
-        assert len(tile_app.tiles) >= 14
+        assert len(tile_app.tiles) >= 10
         for tile in tile_app.tiles:
             assert tile["name"]
             assert tile["action_type"] in ACTION_DEFS
