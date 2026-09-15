@@ -6,7 +6,16 @@ A lightweight, fast, and elegant Python/Tkinter desktop application for Windows 
 
 ---
 
-## ⚡ Quick Start & Running the Application
+## 📥 Download Standalone Executable (.exe)
+
+For users who want to run WinTiles without installing Python:
+1. Go to the **[GitHub Releases](https://github.com/P3rgam0n/WinTiles/releases)** page.
+2. Download `WinTiles.exe` or `WinTiles-v1.0.0-windows-x64.zip`.
+3. Double-click `WinTiles.exe` to launch the app immediately!
+
+---
+
+## ⚡ Quick Start & Running from Source
 
 1. **Requirements**:
    - Python 3.8+ (tested on Python 3.13).
@@ -18,6 +27,11 @@ A lightweight, fast, and elegant Python/Tkinter desktop application for Windows 
      ```powershell
      python app.py
      ```
+
+3. **Building Standalone `.exe` Locally**:
+   ```powershell
+   python build_exe.py
+   ```
 
 ---
 
