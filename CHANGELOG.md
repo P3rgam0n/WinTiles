@@ -3,6 +3,16 @@
 All notable changes to the WinTiles project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-09-15
+
+### Added
+- **Standalone Windows Executable**:
+  - Automated build script (`build_exe.py`) packaging standalone `WinTiles.exe` and release archives.
+  - Multi-resolution Windows application icon (`assets/icon.ico`).
+  - GitHub Actions CI/CD release workflow for automatic `.exe` publication upon tag push.
+- **Documentation**:
+  - Direct download instructions and release section in `README.md`.
+
 ## [1.0.0] - 2026-09-14
 
 ### Added
@@ -29,10 +39,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Smooth window opacity adjustment via `Ctrl + Mouse Wheel` (100% to 10%).
   - Dark and Light theme support with native Windows 11 DWM title bar integration.
   - Bilingual interface support (English & Polish).
-- **Standalone Windows Executable**:
-  - Automated build script (`build_exe.py`) packaging standalone `WinTiles.exe` and release archives.
-  - Multi-resolution Windows application icon (`assets/icon.ico`).
-  - GitHub Actions CI/CD release workflow for automatic `.exe` publication upon tag push.
 - **Quality & Security**:
   - Fully sanitized default configuration with public example tiles.
   - Comprehensive automated unit test suite.
