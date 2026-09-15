@@ -1,0 +1,46 @@
+name: Build and Release Standalone Executable
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build WinTiles Windows Executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller pillow pytest
+
+      - name: Run automated tests
+        run: |
+          pytest -v
+
+      - name: Build Executable and Release Archive
+        run: |
+          python build_exe.py
+
+      - name: Create GitHub Release and Upload Binaries
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/WinTiles.exe
+            release/WinTiles-*.zip
+          generate_release_notes: true
