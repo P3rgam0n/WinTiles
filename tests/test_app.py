@@ -339,6 +339,10 @@ def test_load_real_tiles_json(tk_root):
     finally:
         app.PRIMARY_CONFIG_FILE = old_primary
         app.FALLBACK_CONFIG_FILE = old_fallback
+        try:
+            sub_top.update_idletasks()
+        except Exception:
+            pass
         sub_top.destroy()
 
 

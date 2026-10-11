@@ -446,14 +446,30 @@ def apply_windows_dark_titlebar(window, dark: bool):
     if sys.platform != "win32":
         return
     try:
+        if not window.winfo_exists() or window.wm_state() in ("withdrawn", "iconic"):
+            return
         window.update_idletasks()
-        hwnd = ctypes.windll.user32.GetParent(window.winfo_id()) or window.winfo_id()
+        user32 = ctypes.windll.user32
+        dwmapi = ctypes.windll.dwmapi
+        user32.GetParent.restype = ctypes.c_void_p
+        user32.GetParent.argtypes = [ctypes.c_void_p]
+        dwmapi.DwmSetWindowAttribute.argtypes = [
+            ctypes.c_void_p,
+            ctypes.c_uint,
+            ctypes.c_void_p,
+            ctypes.c_uint,
+        ]
+        raw_id = window.winfo_id()
+        parent_hwnd = user32.GetParent(raw_id)
+        hwnd = parent_hwnd or raw_id
+        if not hwnd:
+            return
         val = ctypes.c_int(1 if dark else 0)
-        res = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+        res = dwmapi.DwmSetWindowAttribute(
             hwnd, 20, ctypes.byref(val), ctypes.sizeof(val)
         )
         if res != 0:
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+            dwmapi.DwmSetWindowAttribute(
                 hwnd, 19, ctypes.byref(val), ctypes.sizeof(val)
             )
     except Exception:
@@ -1060,7 +1076,8 @@ class TileApp:
                     if factor > 1:
                         img = img.subsample(factor, factor)
                 self.app_icon = img
-                self.root.iconphoto(False, self.app_icon)
+                if sys.platform != "win32":
+                    self.root.iconphoto(False, self.app_icon)
             except Exception:
                 self.app_icon = None
         else:
