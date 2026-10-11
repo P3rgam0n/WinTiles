@@ -1,6 +1,6 @@
 {
-  "always_on_top": false,
-  "window_lock_mode": "normal",
+  "always_on_top": true,
+  "window_lock_mode": "locked",
   "dark_mode": true,
   "opacity": 1.0,
   "language": "en",
