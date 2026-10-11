@@ -3,6 +3,26 @@
 All notable changes to the WinTiles project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-11
+
+### Added
+- **Minimalist Smart Window Lock & Protection (Tri-State Button)**:
+  - Multi-state intelligent locking combining window pinning and click-protection in a single minimalist control without extra buttons.
+  - Three distinct operating modes:
+    - `Standard Window` (`📌` Neutral Gray) – standard Z-order and full interactivity.
+    - `Always on Top` (`📌` Sky Blue / Cyan) – pinned on top with full interactivity.
+    - `Click-Locked HUD` (`🔒` Amber Gold) – pinned on top with click protection (tiles cannot be clicked, dragged, or edited accidentally, creating a safe reference HUD overlay).
+  - Diverse interaction triggers:
+    - **Single Click**: cycles modes (`Standard` ➔ `Always on Top` ➔ `Click-Locked` ➔ `Standard`).
+    - **Double Click**: fast-toggle shortcut directly between `Standard` and `Click-Locked`.
+    - **Right Click**: context popup menu for direct mode selection.
+    - **Global Keyboard Shortcut**: `Ctrl + L` for rapid mode switching from anywhere.
+  - Informative toast feedback when clicking protected tiles or changing modes.
+  - Dynamic status bar hints and context-aware tooltips in both Polish and English.
+  - Full backward and forward compatibility in `tiles.json` configuration parsing and serialization.
+- **Automated Tests**:
+  - Expanded test suite with unit and integration tests covering cycling, double-click shortcuts, tile protection, theme parity, and configuration migration.
+
 ## [1.0.1] - 2026-09-15
 
 ### Added

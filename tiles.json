@@ -1,5 +1,6 @@
 {
   "always_on_top": false,
+  "window_lock_mode": "normal",
   "dark_mode": true,
   "opacity": 1.0,
   "language": "en",

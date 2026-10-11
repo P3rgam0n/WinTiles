@@ -80,8 +80,22 @@ Choose from multiple sorting modes in the top-right dropdown:
 - Real-time percentage indicator appears on the status bar (e.g. `Window opacity: 85%`).
 - Opacity settings persist across application restarts.
 
-### 6. Modern Windows 11 UI
-- **Header Tooltips**: Hover over control buttons (topmost **📌**, dark mode **🌙/☀️**, clear search **✕**, add tile, save) for quick contextual hints.
+### 6. Minimalist Smart Window Lock & Protection (Tri-State Button)
+A single, clean multi-functional button that combines window pinning and click-protection without adding extra buttons or visual clutter:
+- **Mode 1: Standard Window (`normal`)** – Icon **📌** (Neutral Gray). Standard Z-order and full interactivity.
+- **Mode 2: Always on Top (`topmost`)** – Icon **📌** (Vivid Sky Blue / Cyan). Keeps the window above other applications while remaining fully interactive.
+- **Mode 3: Click-Locked HUD (`locked`)** – Icon **🔒** (Vivid Amber Gold). Window stays pinned on top, but **tiles are protected from accidental clicks**:
+  - Tile clicks, actions, and drag-and-drop are disabled so you can use the launcher as a non-intrusive cheat-sheet or reference HUD.
+  - Clicking tiles displays a friendly status toast: `🔒 Window is locked. Click header lock icon to unlock.`
+  - The status bar updates with real-time lock indicators.
+- **Versatile Smart Controls**:
+  - **Single Click**: Cycles modes sequentially (`Standard` ➔ `Always on Top` ➔ `Click-Locked` ➔ `Standard`).
+  - **Double Click**: Direct fast-toggle between Standard and Click-Locked.
+  - **Right Click**: Opens a compact context popup to choose any mode instantly.
+  - **Keyboard Shortcut**: `Ctrl + L` anywhere in the app.
+
+### 7. Modern Windows 11 UI
+- **Header Tooltips**: Hover over control buttons (Smart Lock **📌/🔒**, dark mode **🌙/☀️**, clear search **✕**, add tile, save) for quick contextual hints.
 - **Windows 11 Dark Title Bar**: Native DWM integration for seamless dark title bars.
 - **Live Search**: Instant real-time tile filtering by name, action type, target path, or description.
 - **Right-Click Context Menu**:
@@ -119,6 +133,7 @@ Settings and tiles are saved to `tiles.json`. Sample clean configuration:
 ```json
 {
   "always_on_top": false,
+  "window_lock_mode": "normal",
   "dark_mode": true,
   "language": "en",
   "sort_by": "manual",

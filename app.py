@@ -8,7 +8,7 @@ import tkinter as tk
 import urllib.parse
 import webbrowser
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
 APP_CONFIG_DIR_NAME = "WinTiles"
@@ -26,6 +26,11 @@ LANG_CODES = {
     "English": LANG_EN,
     "Polski": LANG_PL,
 }
+
+LOCK_MODE_NORMAL = "normal"
+LOCK_MODE_TOPMOST = "topmost"
+LOCK_MODE_LOCKED = "locked"
+LOCK_MODES = [LOCK_MODE_NORMAL, LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED]
 
 SORT_KEYS = [
     "manual",
@@ -237,6 +242,16 @@ TRANSLATIONS = {
         "tt_added": "Added: {}",
         "tt_last_used": "Last used: {}",
         "tt_topmost": "Always on top (keep window above other windows)",
+        "lock_mode_normal": "Standard window",
+        "lock_mode_topmost": "Always on top",
+        "lock_mode_locked": "Click-locked (Protected HUD)",
+        "toast_mode_normal": "🔓 Window mode: Standard",
+        "toast_mode_topmost": "📌 Window mode: Always on top",
+        "toast_mode_locked": "🔒 Window mode: Click-locked (tile protection active)",
+        "toast_locked_tile_click": "🔒 Window is locked. Click header lock icon to unlock.",
+        "hint_mouse_locked": "🔒 Click-locked mode | Click header lock icon to unlock (Ctrl+L)",
+        "tt_lock_mode": "Window mode: {}\n• Click: Cycle modes (Standard ➔ On top ➔ Locked)\n• Double-click: Toggle Lock\n• Right-click: Mode menu\n• Shortcut: Ctrl+L",
+        "menu_lock_modes": "Window Lock Modes",
         "tt_dark_mode": "Toggle theme (dark / light mode)",
         "tt_clear_search": "Clear search filter",
         "tt_add_tile": "Add a new tile",
@@ -322,6 +337,16 @@ TRANSLATIONS = {
         "tt_added": "Dodano: {}",
         "tt_last_used": "Ostatnio: {}",
         "tt_topmost": "Zawsze na wierzchu (utrzymuj okno nad innymi oknami)",
+        "lock_mode_normal": "Standardowe okno",
+        "lock_mode_topmost": "Zawsze na wierzchu",
+        "lock_mode_locked": "Zablokowane kliknięcia (Ochrona HUD)",
+        "toast_mode_normal": "🔓 Tryb okna: Standardowy",
+        "toast_mode_topmost": "📌 Tryb okna: Zawsze na wierzchu",
+        "toast_mode_locked": "🔒 Tryb okna: Zablokowane kliknięcia (ochrona kafelków)",
+        "toast_locked_tile_click": "🔒 Okno jest zablokowane. Kliknij kłódkę w nagłówku, aby odblokować.",
+        "hint_mouse_locked": "🔒 Tryb zablokowany | Kliknij kłódkę w nagłówku, aby odblokować (Ctrl+L)",
+        "tt_lock_mode": "Tryb okna: {}\n• Kliknięcie: Przełącz tryb (Standard ➔ Na wierzchu ➔ Zablokowany)\n• 2x klik: Szybka blokada\n• Prawy klik: Menu wyboru\n• Skrót: Ctrl+L",
+        "menu_lock_modes": "Tryby blokady okna",
         "tt_dark_mode": "Przełącz motyw (ciemny / jasny)",
         "tt_clear_search": "Wyczyść pole wyszukiwania",
         "tt_add_tile": "Dodaj nowy kafelek",
@@ -451,10 +476,12 @@ def get_target_preview(action_type, target):
         clean = target.replace("https://", "").replace("http://", "").rstrip("/")
         return clean if len(clean) <= 28 else clean[:25] + "..."
     if action_type in ("path", "folder", "terminal"):
-        name = Path(target).name or target
+        target_path = PureWindowsPath(target) if "\\" in target else Path(target)
+        name = target_path.name or target
         return name if len(name) <= 26 else name[:23] + "..."
     if action_type in ("exe", "file", "ps1", "python", "bat", "chrome_profile", "vscode"):
-        name = Path(target).name or target
+        target_path = PureWindowsPath(target) if "\\" in target else Path(target)
+        name = target_path.name or target
         return name if len(name) <= 26 else name[:23] + "..."
     if action_type == "clipboard":
         return target if len(target) <= 24 else target[:21] + "..."
@@ -588,10 +615,11 @@ class Tooltip:
         self.tip_window = tw = tk.Toplevel(root)
         tw.wm_withdraw()
         tw.wm_overrideredirect(True)
-        try:
-            tw.wm_attributes("-topmost", True)
-        except tk.TclError:
-            pass
+        if sys.platform == "win32":
+            try:
+                tw.wm_attributes("-topmost", True)
+            except tk.TclError:
+                pass
 
         Tooltip.active_tooltip = self
 
@@ -1025,8 +1053,14 @@ class TileApp:
         icon_path = get_icon_path()
         if icon_path:
             try:
-                self.app_icon = tk.PhotoImage(file=str(icon_path))
-                self.root.iconphoto(True, self.app_icon)
+                img = tk.PhotoImage(file=str(icon_path))
+                w, h = img.width(), img.height()
+                if w > 128 or h > 128:
+                    factor = max(w // 64, h // 64)
+                    if factor > 1:
+                        img = img.subsample(factor, factor)
+                self.app_icon = img
+                self.root.iconphoto(False, self.app_icon)
             except Exception:
                 self.app_icon = None
         else:
@@ -1034,7 +1068,13 @@ class TileApp:
 
         config = self._load_config()
         self.tiles = config["tiles"]
-        self.always_on_top = bool(config["always_on_top"])
+        self.window_lock_mode = config.get("window_lock_mode")
+        if self.window_lock_mode not in LOCK_MODES:
+            if config.get("always_on_top", False):
+                self.window_lock_mode = LOCK_MODE_TOPMOST
+            else:
+                self.window_lock_mode = LOCK_MODE_NORMAL
+        self.always_on_top = self.window_lock_mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED)
         self.dark_mode = bool(config.get("dark_mode", False))
         self.opacity = float(config.get("opacity", 1.0))
         self.opacity = max(0.10, min(1.0, self.opacity))
@@ -1057,16 +1097,18 @@ class TileApp:
         self.drag_hover_target = None
 
         self.var_topmost = tk.BooleanVar(value=self.always_on_top)
+        self.var_lock_mode = tk.StringVar(value=self.window_lock_mode)
         self.var_dark_mode = tk.BooleanVar(value=self.dark_mode)
         self.var_language = tk.StringVar(value=LANG_NAMES.get(self.lang, "English"))
         self.var_search = tk.StringVar(value="")
         self.var_search.trace_add("write", lambda *args: self.on_search_changed())
 
         self.root.attributes("-topmost", self.always_on_top)
-        try:
-            self.root.attributes("-alpha", self.opacity)
-        except Exception:
-            pass
+        if sys.platform == "win32":
+            try:
+                self.root.attributes("-alpha", self.opacity)
+            except Exception:
+                pass
         self.root.minsize(760, 480)
         self.root.geometry("900x560")
         self._set_app_icon()
@@ -1076,6 +1118,8 @@ class TileApp:
         self._build_main_layout()
         self.root.bind("<Escape>", self._on_escape_pressed)
         self.root.bind("<Unmap>", self._on_root_unmap, add="+")
+        self.root.bind("<Control-l>", lambda e: self.cycle_lock_mode())
+        self.root.bind("<Control-L>", lambda e: self.cycle_lock_mode())
         self.root.bind("<Deactivate>", lambda e: self._hide_all_tooltips(), add="+")
         self.root.bind("<FocusOut>", self._on_root_focus_out, add="+")
         self.apply_theme()
@@ -1099,7 +1143,12 @@ class TileApp:
         if png_path.exists():
             try:
                 img = tk.PhotoImage(file=str(png_path))
-                self.root.iconphoto(True, img)
+                w, h = img.width(), img.height()
+                if w > 128 or h > 128:
+                    factor = max(w // 64, h // 64)
+                    if factor > 1:
+                        img = img.subsample(factor, factor)
+                self.root.iconphoto(False, img)
                 self._icon_ref = img
             except Exception:
                 pass
@@ -1205,7 +1254,7 @@ class TileApp:
         self.btn_save = ttk.Button(self.ctrl_frame, command=self.save_tiles)
         self.btn_save.pack(side="left", padx=(0, 6))
 
-        # Topmost Toggle Button
+        # Smart Window Lock Button (Topmost / Click-Locked / Normal)
         self.btn_topmost = tk.Button(
             self.ctrl_frame,
             text="📌",
@@ -1215,9 +1264,12 @@ class TileApp:
             cursor="hand2",
             padx=4,
             pady=2,
-            command=self.toggle_always_on_top,
+            command=self.cycle_lock_mode,
         )
         self.btn_topmost.pack(side="left", padx=(0, 6))
+        self.btn_topmost.bind("<Double-Button-1>", self.on_lock_button_double_click)
+        self.btn_topmost.bind("<Button-3>", self.show_lock_mode_menu)
+        self.btn_lock_mode = self.btn_topmost
 
         # Dark Mode Toggle Button
         self.btn_dark_mode = tk.Button(
@@ -1293,7 +1345,7 @@ class TileApp:
 
         # Header tooltips
         self.header_tooltips = [
-            Tooltip(self.btn_topmost, lambda: self.t["tt_topmost"], dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_topmost, self._get_lock_tooltip_text, dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_dark_mode, lambda: self.t["tt_dark_mode"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_clear_search, lambda: self.t["tt_clear_search"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_add_tile, lambda: self.t["tt_add_tile"], dark_mode=lambda: self.dark_mode),
@@ -1351,10 +1403,11 @@ class TileApp:
         new_opacity = max(0.10, min(1.0, new_opacity))
         if new_opacity != self.opacity:
             self.opacity = new_opacity
-            try:
-                self.root.attributes("-alpha", self.opacity)
-            except Exception:
-                pass
+            if sys.platform == "win32":
+                try:
+                    self.root.attributes("-alpha", self.opacity)
+                except Exception:
+                    pass
             pct = int(round(self.opacity * 100))
             self.show_toast(self.t["opacity_toast"].format(pct))
             self._autosave()
@@ -1413,10 +1466,8 @@ class TileApp:
         }
         self.var_sort.set(key_to_disp.get(self.current_sort, t["sort_manual"]))
 
-        self.btn_topmost.configure(
-            text="📌",
-            relief="sunken" if self.var_topmost.get() else "solid",
-        )
+        self._update_lock_button_appearance()
+        self.update_status_hint()
         self.btn_dark_mode.configure(text="🌙" if self.dark_mode else "☀️")
 
     def on_language_change(self, event=None):
@@ -1426,12 +1477,162 @@ class TileApp:
         self.render_tiles()
         self._autosave()
 
+    def cycle_lock_mode(self):
+        curr_mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        curr_idx = LOCK_MODES.index(curr_mode) if curr_mode in LOCK_MODES else 0
+        next_mode = LOCK_MODES[(curr_idx + 1) % len(LOCK_MODES)]
+        self.set_lock_mode(next_mode)
+
     def toggle_always_on_top(self):
-        new_val = not self.var_topmost.get()
-        self.var_topmost.set(new_val)
-        self.root.attributes("-topmost", new_val)
-        self.btn_topmost.configure(relief="sunken" if new_val else "solid")
-        self._autosave()
+        self.cycle_lock_mode()
+
+    def on_lock_button_double_click(self, event=None):
+        curr_mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        new_mode = LOCK_MODE_LOCKED if curr_mode != LOCK_MODE_LOCKED else LOCK_MODE_NORMAL
+        self.set_lock_mode(new_mode)
+        return "break"
+
+    def set_lock_mode(self, mode, autosave=True, show_toast=True):
+        if mode not in LOCK_MODES:
+            mode = LOCK_MODE_NORMAL
+        self.window_lock_mode = mode
+        if hasattr(self, "var_lock_mode"):
+            self.var_lock_mode.set(mode)
+        is_topmost = mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED)
+        self.always_on_top = is_topmost
+        if hasattr(self, "var_topmost"):
+            self.var_topmost.set(is_topmost)
+        try:
+            self.root.attributes("-topmost", is_topmost)
+        except Exception:
+            pass
+        self._update_lock_button_appearance()
+        self.update_status_hint()
+        if hasattr(self, "tiles_inner_frame"):
+            self.render_tiles()
+        if show_toast:
+            if mode == LOCK_MODE_NORMAL:
+                self.show_toast(self.t["toast_mode_normal"])
+            elif mode == LOCK_MODE_TOPMOST:
+                self.show_toast(self.t["toast_mode_topmost"])
+            elif mode == LOCK_MODE_LOCKED:
+                self.show_toast(self.t["toast_mode_locked"])
+        if autosave:
+            self._autosave()
+
+    def show_lock_mode_menu(self, event=None):
+        self._hide_all_tooltips()
+        menu = tk.Menu(
+            self.root,
+            tearoff=0,
+            bg=self.c_surface,
+            fg=self.c_fg,
+            activebackground=self.c_accent,
+            activeforeground=self.c_accent_fg,
+            bd=1,
+            relief="solid",
+        )
+        t = self.t
+        options = [
+            (LOCK_MODE_NORMAL, "🪟 " + t["lock_mode_normal"]),
+            (LOCK_MODE_TOPMOST, "📌 " + t["lock_mode_topmost"]),
+            (LOCK_MODE_LOCKED, "🔒 " + t["lock_mode_locked"]),
+        ]
+        curr_mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        for mode_key, label in options:
+            prefix = "✓ " if curr_mode == mode_key else "    "
+            menu.add_command(
+                label=f"{prefix}{label}",
+                command=lambda m=mode_key: self.set_lock_mode(m),
+            )
+
+        if event:
+            x = event.x_root
+            y = event.y_root
+        else:
+            x = self.btn_topmost.winfo_rootx()
+            y = self.btn_topmost.winfo_rooty() + self.btn_topmost.winfo_height() + 2
+        menu.tk_popup(x, y)
+
+    def _get_lock_tooltip_text(self):
+        t = self.t
+        mode_names = {
+            LOCK_MODE_NORMAL: t["lock_mode_normal"],
+            LOCK_MODE_TOPMOST: t["lock_mode_topmost"],
+            LOCK_MODE_LOCKED: t["lock_mode_locked"],
+        }
+        curr_mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        curr_name = mode_names.get(curr_mode, t["lock_mode_normal"])
+        return t["tt_lock_mode"].format(curr_name)
+
+    def _update_lock_button_appearance(self):
+        if not hasattr(self, "btn_topmost"):
+            return
+        mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        if mode == LOCK_MODE_TOPMOST:
+            # Pinned mode: Cyan / Sky Blue
+            icon = "📌"
+            if self.dark_mode:
+                bg = "#0f2e42"
+                fg = "#38bdf8"
+                hl = "#38bdf8"
+                active_bg = "#164e63"
+            else:
+                bg = "#e0f2fe"
+                fg = "#0284c7"
+                hl = "#0284c7"
+                active_bg = "#bae6fd"
+        elif mode == LOCK_MODE_LOCKED:
+            # Click-Locked mode: Warm Amber / Gold
+            icon = "🔒"
+            if self.dark_mode:
+                bg = "#451a03"
+                fg = "#fbbf24"
+                hl = "#f59e0b"
+                active_bg = "#78350f"
+            else:
+                bg = "#fef3c7"
+                fg = "#b45309"
+                hl = "#f59e0b"
+                active_bg = "#fde68a"
+        else:
+            # Normal mode: Neutral muted
+            icon = "📌"
+            if self.dark_mode:
+                bg = self.c_surface
+                fg = self.c_fg_muted
+                hl = self.c_border
+                active_bg = self.c_surface_hover
+            else:
+                bg = self.c_surface
+                fg = self.c_fg_muted
+                hl = self.c_border
+                active_bg = self.c_surface_hover
+
+        self.btn_topmost.configure(
+            text=icon,
+            bg=bg,
+            fg=fg,
+            highlightbackground=hl,
+            highlightcolor=hl,
+            activebackground=active_bg,
+            activeforeground=fg,
+            relief="solid",
+        )
+
+    def update_status_hint(self):
+        if not hasattr(self, "lbl_status_hint"):
+            return
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.lbl_status_hint.configure(
+                text=self.t["hint_mouse_locked"],
+                fg="#fbbf24" if self.dark_mode else "#b45309",
+            )
+        else:
+            self.lbl_status_hint.configure(
+                text=self.t["hint_mouse"],
+                fg=self.c_fg_muted,
+            )
 
     def toggle_dark_mode(self):
         self.dark_mode = not self.dark_mode
@@ -1491,12 +1692,7 @@ class TileApp:
             activeforeground=self.c_accent_fg,
         )
 
-        self.btn_topmost.configure(
-            bg=self.c_surface,
-            fg=self.c_fg,
-            highlightbackground=self.c_border,
-            activebackground=self.c_surface_hover,
-        )
+        self._update_lock_button_appearance()
         self.btn_dark_mode.configure(
             bg=self.c_surface,
             fg=self.c_fg,
@@ -1509,7 +1705,8 @@ class TileApp:
         self.tiles_inner_frame.configure(bg=self.c_bg)
 
         self.status_bar.configure(bg=self.c_surface)
-        self.lbl_status_hint.configure(bg=self.c_surface, fg=self.c_fg_muted)
+        self.lbl_status_hint.configure(bg=self.c_surface)
+        self.update_status_hint()
         self.lbl_status_count.configure(bg=self.c_surface, fg=self.c_fg_muted)
         fg_author = "#38bdf8" if self.dark_mode else "#0284c7"
         self.lbl_author.configure(bg=self.c_surface, fg=fg_author)
@@ -1595,6 +1792,7 @@ class TileApp:
             if tiles:
                 return {
                     "always_on_top": False,
+                    "window_lock_mode": LOCK_MODE_NORMAL,
                     "dark_mode": False,
                     "opacity": 1.0,
                     "language": LANG_EN,
@@ -1606,6 +1804,9 @@ class TileApp:
         if isinstance(data, dict):
             tiles = self._validate_tiles(data.get("tiles"))
             always_on_top = bool(data.get("always_on_top", False))
+            window_lock_mode = data.get("window_lock_mode")
+            if window_lock_mode not in LOCK_MODES:
+                window_lock_mode = LOCK_MODE_TOPMOST if always_on_top else LOCK_MODE_NORMAL
             dark_mode = bool(data.get("dark_mode", False))
             try:
                 opacity = float(data.get("opacity", 1.0))
@@ -1620,7 +1821,8 @@ class TileApp:
                 sort_by = "manual"
             if tiles is not None:
                 return {
-                    "always_on_top": always_on_top,
+                    "always_on_top": window_lock_mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED),
+                    "window_lock_mode": window_lock_mode,
                     "dark_mode": dark_mode,
                     "opacity": opacity,
                     "language": language,
@@ -1651,6 +1853,7 @@ class TileApp:
         if not payload:
             payload = {
                 "always_on_top": False,
+                "window_lock_mode": LOCK_MODE_NORMAL,
                 "dark_mode": False,
                 "opacity": 1.0,
                 "language": LANG_EN,
@@ -1683,8 +1886,11 @@ class TileApp:
             raise last_error
 
     def _build_config_payload(self):
+        curr_mode = getattr(self, "window_lock_mode", LOCK_MODE_NORMAL)
+        is_topmost = curr_mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED)
         return {
-            "always_on_top": bool(self.var_topmost.get()),
+            "always_on_top": is_topmost,
+            "window_lock_mode": curr_mode,
             "dark_mode": bool(self.var_dark_mode.get()),
             "opacity": round(float(self.opacity), 2),
             "language": self.lang,
@@ -1693,6 +1899,9 @@ class TileApp:
         }
 
     def save_tiles(self):
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
         try:
             self._write_config(self._build_config_payload())
             self.show_toast(self.t["saved_toast"])
@@ -1840,12 +2049,13 @@ class TileApp:
             icon = meta["icon"]
 
             # Card container
+            cursor_style = "arrow" if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED else "hand2"
             card = tk.Frame(
                 self.tiles_inner_frame,
                 bg=self.c_surface,
                 highlightthickness=1,
                 highlightbackground=self.c_border,
-                cursor="hand2",
+                cursor=cursor_style,
             )
             card.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             card.real_index = real_index
@@ -2008,6 +2218,8 @@ class TileApp:
     def on_tile_enter(self, card_info):
         if self.is_dragging:
             return
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            return
         card = card_info["card"]
         card.configure(
             highlightbackground=card_info["tile_color"],
@@ -2091,12 +2303,17 @@ class TileApp:
 
     def on_tile_press(self, event, real_index):
         self._hide_all_tooltips()
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return "break"
         self.drag_source_idx = real_index
         self.drag_start_pos = (event.x_root, event.y_root)
         self.is_dragging = False
         self.drag_hover_target = None
 
     def on_tile_motion(self, event):
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            return "break"
         if self.drag_source_idx is None or self.drag_start_pos is None:
             return
 
@@ -2150,11 +2367,12 @@ class TileApp:
         tile = self.tiles[source_index]
         self.drag_ghost = tw = tk.Toplevel(self.root)
         tw.wm_overrideredirect(True)
-        tw.wm_attributes("-topmost", True)
-        try:
-            tw.wm_attributes("-alpha", 0.90)
-        except Exception:
-            pass
+        if sys.platform == "win32":
+            tw.wm_attributes("-topmost", True)
+            try:
+                tw.wm_attributes("-alpha", 0.90)
+            except Exception:
+                pass
 
         ghost_box = tk.Frame(
             tw,
@@ -2192,6 +2410,20 @@ class TileApp:
         lbl_t.pack(side="left")
 
     def on_tile_release(self, event):
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.drag_source_idx = None
+            self.drag_start_pos = None
+            self.is_dragging = False
+            self.drag_hover_target = None
+            self.root.configure(cursor="")
+            if self.drag_ghost:
+                try:
+                    self.drag_ghost.destroy()
+                except tk.TclError:
+                    pass
+                self.drag_ghost = None
+            return "break"
+
         if self.drag_source_idx is None:
             return
 
@@ -2274,6 +2506,9 @@ class TileApp:
         self.show_toast(self.t["toast_reordered"].format(tile["name"], target_index + 1))
 
     def run_tile(self, index):
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
         tile = self.tiles[index]
         action_type = tile["action_type"].strip().lower()
         target = tile["target"].strip()
@@ -2375,7 +2610,11 @@ class TileApp:
             elif action_type == "clipboard":
                 self.root.clipboard_clear()
                 self.root.clipboard_append(target)
-                self.root.update()
+                if sys.platform == "win32":
+                    try:
+                        self.root.update()
+                    except Exception:
+                        pass
                 snippet = (target[:35] + "...") if len(target) > 35 else target
                 self.show_toast(self.t["toast_copied"].format(snippet))
 
@@ -2556,6 +2795,9 @@ class TileApp:
 
     def add_tile(self):
         self._hide_all_tooltips()
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
         dialog = EditTileDialog(
             self.root,
             tile={
@@ -2649,6 +2891,9 @@ class TileApp:
 
     def open_tile_menu(self, event, index):
         self._hide_all_tooltips()
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return "break"
         bg = "#27272a" if self.dark_mode else "#ffffff"
         fg = "#f4f4f5" if self.dark_mode else "#0f172a"
         active_bg = "#4f46e5" if self.dark_mode else "#e0e7ff"

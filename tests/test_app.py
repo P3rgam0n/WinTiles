@@ -355,7 +355,7 @@ def test_run_tile_actions_dispatch(tk_root, monkeypatch):
     called = {}
 
     monkeypatch.setattr(app.webbrowser, "open", lambda url, new=2: called.update({"webbrowser": url}))
-    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}))
+    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}), raising=False)
     monkeypatch.setattr(app.subprocess, "Popen", lambda args, **kwargs: called.update({"popen": args, "kwargs": kwargs}))
 
     # 1. URL action
@@ -489,7 +489,7 @@ def test_file_action_types_execution(tk_root, monkeypatch, tmp_path):
     app_inst.show_toast = lambda msg: None
 
     called = {}
-    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}))
+    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}), raising=False)
     monkeypatch.setattr(app.subprocess, "Popen", lambda args, **kwargs: called.update({"popen": args}))
 
     # Create dummy files
@@ -654,7 +654,7 @@ def test_custom_order_restoration(tk_root):
     assert [t["name"] for t in app_inst.tiles] == ["Third", "First", "Second"]
 
 
-def test_drag_and_drop_gap_detection(tk_root, tmp_path):
+def test_drag_and_drop_gap_detection(tk_root, tmp_path, monkeypatch):
     """Verify get_card_info_at_coords finds the nearest card when dropped in margins/padding."""
     cfg_file = tmp_path / "tiles_gap.json"
     cfg_data = {
@@ -673,15 +673,27 @@ def test_drag_and_drop_gap_detection(tk_root, tmp_path):
     app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
     try:
         tile_app = TileApp(sub_top)
-        sub_top.update()
         card0 = tile_app.rendered_cards[0]["card"]
         card1 = tile_app.rendered_cards[1]["card"]
-        r0 = (card0.winfo_rootx(), card0.winfo_rooty(), card0.winfo_width(), card0.winfo_height())
-        r1 = (card1.winfo_rootx(), card1.winfo_rooty(), card1.winfo_width(), card1.winfo_height())
 
-        # Midpoint in horizontal gap between card 0 and card 1
-        gap_x = (r0[0] + r0[2] + r1[0]) // 2
-        mid_y = r0[1] + r0[3] // 2
+        monkeypatch.setattr(card0, "winfo_ismapped", lambda: True)
+        monkeypatch.setattr(card1, "winfo_ismapped", lambda: True)
+        monkeypatch.setattr(card0, "winfo_rootx", lambda: 10)
+        monkeypatch.setattr(card0, "winfo_rooty", lambda: 10)
+        monkeypatch.setattr(card0, "winfo_width", lambda: 100)
+        monkeypatch.setattr(card0, "winfo_height", lambda: 60)
+        monkeypatch.setattr(card1, "winfo_rootx", lambda: 120)
+        monkeypatch.setattr(card1, "winfo_rooty", lambda: 10)
+        monkeypatch.setattr(card1, "winfo_width", lambda: 100)
+        monkeypatch.setattr(card1, "winfo_height", lambda: 60)
+        monkeypatch.setattr(tile_app.canvas, "winfo_rootx", lambda: 0)
+        monkeypatch.setattr(tile_app.canvas, "winfo_rooty", lambda: 0)
+        monkeypatch.setattr(tile_app.canvas, "winfo_width", lambda: 500)
+        monkeypatch.setattr(tile_app.canvas, "winfo_height", lambda: 500)
+
+        # Midpoint in horizontal gap between card 0 and card 1 (gap between 110 and 120 is 115)
+        gap_x = 115
+        mid_y = 40
 
         found = tile_app.get_card_info_at_coords(gap_x, mid_y)
         assert found is not None, "Gap hit-testing failed to find nearest card"
@@ -830,7 +842,7 @@ def test_path_with_quotes_handling(tk_root, monkeypatch, tmp_path):
     quoted_dir = f'"{test_dir}"'
 
     called = {}
-    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}))
+    monkeypatch.setattr(app.os, "startfile", lambda p: called.update({"startfile": p}), raising=False)
 
     app_inst.tiles = [{"name": "Quoted Folder", "action_type": "path", "target": quoted_dir, "use_count": 0}]
     app_inst.run_tile(0)
@@ -898,7 +910,7 @@ def test_info_icon_click_does_not_run_tile(tk_root, tmp_path, monkeypatch):
         sub_top.destroy()
 
 
-def test_tooltip_suppressed_when_minimized(tk_root, tmp_path):
+def test_tooltip_suppressed_when_minimized(tk_root, tmp_path, monkeypatch):
     """Verify Tooltip.show does not pop up if the toplevel window is minimized or not normal."""
     sub_top = tk.Toplevel(tk_root)
     lbl = tk.Label(sub_top, text="info")
@@ -910,6 +922,8 @@ def test_tooltip_suppressed_when_minimized(tk_root, tmp_path):
     # Iconify window
     sub_top.iconify()
     sub_top.update()
+    if sub_top.wm_state() != "iconic":
+        monkeypatch.setattr(sub_top, "wm_state", lambda: "iconic")
 
     # Attempt to show
     tt.show()
@@ -990,6 +1004,8 @@ def test_canvas_scrollregion_min_height(tk_root, tmp_path):
 def test_tooltip_hover_grace_period(tk_root):
     """Verify Tooltip schedules hide and can cancel hide when re-entered."""
     sub_top = tk.Toplevel(tk_root)
+    sub_top.geometry("300x200")
+    sub_top.deiconify()
     lbl = tk.Label(sub_top, text="i")
     lbl.pack()
     sub_top.update()
@@ -1330,13 +1346,15 @@ def test_header_tooltips_and_language_switching(tk_root):
 
             # Test Polish language tooltips
             tile_app.lang = LANG_PL
-            assert topmost_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_topmost"]
+            assert topmost_tt.text_provider() == tile_app._get_lock_tooltip_text()
+            assert "Tryb okna:" in topmost_tt.text_provider()
             assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_dark_mode"]
             assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_clear_search"]
 
             # Test English language tooltips
             tile_app.lang = LANG_EN
-            assert topmost_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_topmost"]
+            assert topmost_tt.text_provider() == tile_app._get_lock_tooltip_text()
+            assert "Window mode:" in topmost_tt.text_provider()
             assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_dark_mode"]
             assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_clear_search"]
         finally:
@@ -1456,6 +1474,225 @@ def test_opacity_config_parsing_and_saving(tk_root):
             app.PRIMARY_CONFIG_FILE = old_primary
             app.FALLBACK_CONFIG_FILE = old_fallback
             sub_top.destroy()
+
+
+def test_smart_window_lock_cycle_and_modes(tk_root, tmp_path):
+    """Verify single-click cycling: Normal -> Topmost -> Locked -> Normal."""
+    cfg_file = tmp_path / "test_lock.json"
+    cfg_file.write_text(json.dumps({"tiles": [{"name": "Sample", "action_type": "url", "target": "https://example.com"}]}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    try:
+        tile_app = TileApp(sub_top)
+        # Initial state: Normal
+        assert tile_app.window_lock_mode == app.LOCK_MODE_NORMAL
+        assert tile_app.always_on_top is False
+        assert tile_app.btn_topmost.cget("text") == "📌"
+
+        # Click 1: Pinned / Topmost
+        tile_app.cycle_lock_mode()
+        assert tile_app.window_lock_mode == app.LOCK_MODE_TOPMOST
+        assert tile_app.always_on_top is True
+        assert tile_app.btn_topmost.cget("text") == "📌"
+        assert tile_app.btn_topmost.cget("fg") == ("#38bdf8" if tile_app.dark_mode else "#0284c7")
+
+        # Click 2: Click-Locked
+        tile_app.cycle_lock_mode()
+        assert tile_app.window_lock_mode == app.LOCK_MODE_LOCKED
+        assert tile_app.always_on_top is True
+        assert tile_app.btn_topmost.cget("text") == "🔒"
+        assert tile_app.btn_topmost.cget("fg") == ("#fbbf24" if tile_app.dark_mode else "#b45309")
+
+        # Click 3: Back to Normal
+        tile_app.cycle_lock_mode()
+        assert tile_app.window_lock_mode == app.LOCK_MODE_NORMAL
+        assert tile_app.always_on_top is False
+        assert tile_app.btn_topmost.cget("text") == "📌"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_smart_window_lock_double_click(tk_root, tmp_path):
+    """Verify double-click fast-toggle between Normal and Locked."""
+    cfg_file = tmp_path / "test_lock_dbl.json"
+    cfg_file.write_text(json.dumps({"tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    try:
+        tile_app = TileApp(sub_top)
+        assert tile_app.window_lock_mode == app.LOCK_MODE_NORMAL
+
+        # Double click from Normal -> Locked
+        ret = tile_app.on_lock_button_double_click()
+        assert ret == "break"
+        assert tile_app.window_lock_mode == app.LOCK_MODE_LOCKED
+        assert tile_app.always_on_top is True
+        assert tile_app.btn_topmost.cget("text") == "🔒"
+
+        # Double click from Locked -> Normal
+        ret2 = tile_app.on_lock_button_double_click()
+        assert ret2 == "break"
+        assert tile_app.window_lock_mode == app.LOCK_MODE_NORMAL
+        assert tile_app.always_on_top is False
+        assert tile_app.btn_topmost.cget("text") == "📌"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_smart_window_lock_protection_behavior(tk_root, tmp_path, monkeypatch):
+    """Verify that in locked mode, tile actions, drag-drop, and edit menus are blocked."""
+    cfg_file = tmp_path / "test_lock_prot.json"
+    cfg_file.write_text(json.dumps({"tiles": [{"name": "Test Tile", "action_type": "url", "target": "https://test.com", "use_count": 0}]}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    try:
+        tile_app = TileApp(sub_top)
+        opened_urls = []
+        monkeypatch.setattr(app.webbrowser, "open", lambda u, new=2: opened_urls.append(u))
+
+        # Switch to Locked mode
+        tile_app.set_lock_mode(app.LOCK_MODE_LOCKED)
+        assert tile_app.window_lock_mode == app.LOCK_MODE_LOCKED
+
+        # 1. Attempt to run tile
+        tile_app.run_tile(0)
+        assert len(opened_urls) == 0, "Tile ran action while in locked mode!"
+        assert tile_app.tiles[0]["use_count"] == 0
+
+        # 2. Attempt press / drag
+        dummy_event = type("Event", (), {"x_root": 100, "y_root": 100})()
+        press_res = tile_app.on_tile_press(dummy_event, 0)
+        assert press_res == "break"
+        assert tile_app.is_dragging is False
+        assert tile_app.drag_source_idx is None
+
+        # 3. Attempt context menu
+        menu_res = tile_app.open_tile_menu(dummy_event, 0)
+        assert menu_res == "break"
+
+        # 4. Status hint indicates locked
+        assert tile_app.lbl_status_hint.cget("text") == tile_app.t["hint_mouse_locked"]
+
+        # Unlock back to normal
+        tile_app.set_lock_mode(app.LOCK_MODE_NORMAL)
+        tile_app.run_tile(0)
+        assert len(opened_urls) == 1
+        assert tile_app.tiles[0]["use_count"] == 1
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_smart_window_lock_config_parsing_and_saving():
+    """Verify config parsing, migration from legacy always_on_top, and saving."""
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.tiles = []
+    app_inst.var_dark_mode = type("DummyVar", (), {"get": lambda self: False})()
+    app_inst.opacity = 1.0
+    app_inst.lang = app.LANG_EN
+    app_inst.current_sort = "manual"
+
+    # Legacy config: always_on_top=True without window_lock_mode
+    legacy_true = {"always_on_top": True, "tiles": []}
+    parsed1 = app_inst._parse_config_payload(legacy_true)
+    assert parsed1["window_lock_mode"] == app.LOCK_MODE_TOPMOST
+    assert parsed1["always_on_top"] is True
+
+    # Legacy config: always_on_top=False without window_lock_mode
+    legacy_false = {"always_on_top": False, "tiles": []}
+    parsed2 = app_inst._parse_config_payload(legacy_false)
+    assert parsed2["window_lock_mode"] == app.LOCK_MODE_NORMAL
+    assert parsed2["always_on_top"] is False
+
+    # Modern config: window_lock_mode="locked"
+    modern_locked = {"window_lock_mode": "locked", "tiles": []}
+    parsed3 = app_inst._parse_config_payload(modern_locked)
+    assert parsed3["window_lock_mode"] == app.LOCK_MODE_LOCKED
+    assert parsed3["always_on_top"] is True
+
+    # Test payload building
+    app_inst.window_lock_mode = app.LOCK_MODE_LOCKED
+    app_inst.always_on_top = True
+    payload = app_inst._build_config_payload()
+    assert payload["window_lock_mode"] == app.LOCK_MODE_LOCKED
+    assert payload["always_on_top"] is True
+
+    app_inst.window_lock_mode = app.LOCK_MODE_NORMAL
+    app_inst.always_on_top = False
+    payload_normal = app_inst._build_config_payload()
+    assert payload_normal["window_lock_mode"] == app.LOCK_MODE_NORMAL
+    assert payload_normal["always_on_top"] is False
+
+
+def test_smart_window_lock_menu_and_theme_parity(tk_root, tmp_path):
+    """Verify right-click menu options and theme appearance across all modes."""
+    cfg_file = tmp_path / "test_lock_theme.json"
+    cfg_file.write_text(json.dumps({"tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    try:
+        tile_app = TileApp(sub_top)
+
+        # Test Dark Mode styling
+        tile_app.dark_mode = True
+        tile_app.set_lock_mode(app.LOCK_MODE_NORMAL, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "📌"
+        assert tile_app.btn_topmost.cget("fg") == tile_app.c_fg_muted
+
+        tile_app.set_lock_mode(app.LOCK_MODE_TOPMOST, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "📌"
+        assert tile_app.btn_topmost.cget("fg") == "#38bdf8"
+
+        tile_app.set_lock_mode(app.LOCK_MODE_LOCKED, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "🔒"
+        assert tile_app.btn_topmost.cget("fg") == "#fbbf24"
+
+        # Test Light Mode styling
+        tile_app.dark_mode = False
+        tile_app.set_lock_mode(app.LOCK_MODE_NORMAL, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "📌"
+        assert tile_app.btn_topmost.cget("fg") == tile_app.c_fg_muted
+
+        tile_app.set_lock_mode(app.LOCK_MODE_TOPMOST, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "📌"
+        assert tile_app.btn_topmost.cget("fg") == "#0284c7"
+
+        tile_app.set_lock_mode(app.LOCK_MODE_LOCKED, autosave=False, show_toast=False)
+        assert tile_app.btn_topmost.cget("text") == "🔒"
+        assert tile_app.btn_topmost.cget("fg") == "#b45309"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
 
 
 
