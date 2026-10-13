@@ -3,6 +3,24 @@
 All notable changes to the WinTiles project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-10-14
+
+### Added
+- **Per-Tile "Run on Start" Autostart Feature (`🚀`)**:
+  - Each tile can now be individually configured to auto-execute its action upon application launch when system autostart is enabled (`run_on_start: true`).
+  - Seamless control across multiple UI touchpoints:
+    - **Interactive Tile Button/Badge (`🚀`)**: Emerald green indicator on marked tiles that toggles autostart on click without launching the tile or triggering drag operations.
+    - **Right-Click Context Menu**: Explicit toggle option ("🚀 Enable run on WinTiles start" / "🚀 Disable run on WinTiles start") with instant toast notification.
+    - **Add & Edit Tile Dialog**: Modern checkbox control (`[x] 🚀 Run automatically on WinTiles startup`) to configure startup execution directly upon creation or editing.
+  - Smart system-autostart coordination:
+    - When WinTiles is booted by the operating system (global autostart enabled), all marked tiles execute their actions 500ms after UI initialization (`root.after`).
+    - Prevents unintended execution during manual launches when global autostart is disabled.
+  - Safe duplication: duplicated tiles automatically reset `run_on_start` to `false` to avoid unintentional duplicate executions.
+  - Bilingual localization: full Polish and English translation coverage for all labels, dialog checkboxes, tooltips, toasts, and context menus.
+  - Configuration persistence: automatic saving and backward-compatible loading of `run_on_start` in `tiles.json`.
+- **Automated Tests**:
+  - Added 4 new automated unit tests verifying toggle behavior, startup execution with global autostart guard, config serialization, and duplicate tile safety (56 total tests passing).
+
 ## [1.5.0] - 2026-10-13
 
 ### Added

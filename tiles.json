@@ -1,7 +1,7 @@
 {
   "always_on_top": false,
   "window_lock_mode": "normal",
-  "autostart": false,
+  "autostart": true,
   "dark_mode": true,
   "opacity": 1.0,
   "language": "en",
@@ -16,7 +16,8 @@
       "use_count": 0,
       "created_at": "2026-09-14T10:00:00",
       "last_used": "",
-      "order": 0
+      "order": 0,
+      "run_on_start": false
     },
     {
       "name": "WinTiles GitHub",
@@ -27,7 +28,8 @@
       "use_count": 0,
       "created_at": "2026-09-14T10:00:00",
       "last_used": "",
-      "order": 1
+      "order": 1,
+      "run_on_start": false
     },
     {
       "name": "PowerShell Console",
@@ -38,7 +40,8 @@
       "use_count": 0,
       "created_at": "2026-09-14T10:00:00",
       "last_used": "",
-      "order": 2
+      "order": 2,
+      "run_on_start": false
     },
     {
       "name": "System Notepad",
@@ -49,7 +52,8 @@
       "use_count": 0,
       "created_at": "2026-09-14T10:00:00",
       "last_used": "",
-      "order": 3
+      "order": 3,
+      "run_on_start": false
     },
     {
       "name": "Public Documents",
@@ -57,10 +61,11 @@
       "target": "C:\\Users\\Public\\Documents",
       "color": "#8b5cf6",
       "description": "Public documents directory",
-      "use_count": 0,
+      "use_count": 1,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 4
+      "last_used": "2026-10-13T23:22:59.225408",
+      "order": 4,
+      "run_on_start": false
     },
     {
       "name": "Command Prompt",
@@ -68,10 +73,11 @@
       "target": "C:\\Windows\\System32\\cmd.exe",
       "color": "#64748b",
       "description": "Windows CMD console",
-      "use_count": 0,
+      "use_count": 1,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 5
+      "last_used": "2026-10-13T23:22:43.964006",
+      "order": 5,
+      "run_on_start": false
     },
     {
       "name": "VS Code Workspace",
@@ -79,10 +85,11 @@
       "target": ".",
       "color": "#007acc",
       "description": "Open current directory in Visual Studio Code",
-      "use_count": 0,
+      "use_count": 1,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 6
+      "last_used": "2026-10-13T23:22:35.237963",
+      "order": 6,
+      "run_on_start": false
     },
     {
       "name": "Terminal in Folder",
@@ -90,10 +97,11 @@
       "target": ".",
       "color": "#10b981",
       "description": "Open Windows Terminal in current directory",
-      "use_count": 0,
+      "use_count": 2,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 7
+      "last_used": "2026-10-13T23:22:30.800723",
+      "order": 7,
+      "run_on_start": false
     },
     {
       "name": "Sample Prompt",
@@ -101,10 +109,11 @@
       "target": "Welcome to WinTiles! Your quick desktop productivity launcher.",
       "color": "#f59e0b",
       "description": "Copy sample prompt text to clipboard",
-      "use_count": 0,
+      "use_count": 1,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 8
+      "last_used": "2026-10-13T23:22:52.738716",
+      "order": 8,
+      "run_on_start": false
     },
     {
       "name": "Google Web Search",
@@ -112,10 +121,11 @@
       "target": "WinTiles Windows launcher",
       "color": "#ec4899",
       "description": "Search web for query in default browser",
-      "use_count": 0,
+      "use_count": 1,
       "created_at": "2026-09-14T10:00:00",
-      "last_used": "",
-      "order": 9
+      "last_used": "2026-10-13T23:22:47.587227",
+      "order": 9,
+      "run_on_start": false
     }
   ]
 }

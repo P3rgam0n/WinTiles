@@ -2043,6 +2043,149 @@ def test_tile_app_autostart_error_handling(tk_root, tmp_path, monkeypatch):
         sub_top.destroy()
 
 
+def test_tile_run_on_start_toggle(tk_root):
+    """Verify toggle_tile_run_on_start flips the flag, calls autosave, and updates toast."""
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.root = tk_root
+    app_inst.lang = LANG_EN
+    app_inst.dark_mode = False
+    app_inst.window_lock_mode = "normal"
+    app_inst.tooltips = []
+    app_inst.header_tooltips = []
+    app_inst._autosave = lambda: None
+    app_inst.render_tiles = lambda: None
+    toasts = []
+    app_inst.show_toast = lambda msg: toasts.append(msg)
+
+    app_inst.tiles = [
+        {
+            "name": "Test Tile",
+            "action_type": "url",
+            "target": "https://example.com",
+            "run_on_start": False,
+            "use_count": 0,
+        },
+    ]
+
+    # Toggle ON
+    app_inst.toggle_tile_run_on_start(0)
+    assert app_inst.tiles[0]["run_on_start"] is True
+    assert len(toasts) == 1
+    assert "will run on WinTiles start" in toasts[-1]
+
+    # Toggle OFF
+    app_inst.toggle_tile_run_on_start(0)
+    assert app_inst.tiles[0]["run_on_start"] is False
+    assert len(toasts) == 2
+    assert "will no longer run on start" in toasts[-1]
+
+
+def test_autorun_tiles_on_startup(tk_root, monkeypatch):
+    """Verify _execute_autorun_tiles runs only marked tiles and only when global autostart is enabled."""
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.root = tk_root
+    app_inst.lang = LANG_EN
+    app_inst.dark_mode = False
+    app_inst.window_lock_mode = "normal"
+    app_inst.autostart = True  # Global autostart is enabled
+    app_inst._autosave = lambda: None
+    app_inst.render_tiles = lambda: None
+    toasts = []
+    app_inst.show_toast = lambda msg: toasts.append(msg)
+
+    run_log = []
+    monkeypatch.setattr(app.webbrowser, "open", lambda url, new=2: run_log.append(url))
+
+    app_inst.tiles = [
+        {
+            "name": "Auto Tile",
+            "action_type": "url",
+            "target": "https://auto.com",
+            "run_on_start": True,
+            "use_count": 0,
+        },
+        {
+            "name": "Normal Tile",
+            "action_type": "url",
+            "target": "https://normal.com",
+            "run_on_start": False,
+            "use_count": 0,
+        },
+    ]
+
+    # With global autostart=True: Auto Tile executes
+    app_inst._execute_autorun_tiles()
+    assert len(run_log) == 1
+    assert "auto.com" in run_log[0]
+    assert app_inst.tiles[0]["use_count"] == 1
+    assert app_inst.tiles[1]["use_count"] == 0
+    assert len(toasts) == 1
+    assert "Auto-started 1 tile" in toasts[0]
+
+    # When global autostart is False: no tiles should execute
+    run_log.clear()
+    toasts.clear()
+    app_inst.autostart = False
+    app_inst.tiles[0]["use_count"] = 0
+    app_inst._execute_autorun_tiles()
+    assert len(run_log) == 0
+    assert app_inst.tiles[0]["use_count"] == 0
+    assert len(toasts) == 0
+
+
+def test_run_on_start_persisted_in_config(tk_root):
+    """Verify run_on_start flag is preserved through validate/parse cycle."""
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.root = tk_root
+
+    data = {
+        "tiles": [
+            {
+                "name": "Persist Tile",
+                "action_type": "exe",
+                "target": "C:\\app.exe",
+                "run_on_start": True,
+            },
+        ]
+    }
+
+    parsed = app_inst._parse_config_payload(data)
+    assert parsed is not None
+    assert parsed["tiles"][0]["run_on_start"] is True
+
+
+def test_duplicate_tile_clears_run_on_start(tk_root):
+    """Verify that duplicated tile does NOT inherit run_on_start flag."""
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.root = tk_root
+    app_inst.lang = LANG_EN
+    app_inst.dark_mode = False
+    app_inst.current_sort = "manual"
+    app_inst.tooltips = []
+    app_inst.header_tooltips = []
+    app_inst._autosave = lambda: None
+    app_inst.render_tiles = lambda: None
+    app_inst.show_toast = lambda msg: None
+
+    app_inst.tiles = [
+        {
+            "name": "Original",
+            "action_type": "url",
+            "target": "https://x.com",
+            "run_on_start": True,
+            "use_count": 5,
+            "created_at": "2026-01-01T00:00:00",
+            "last_used": "2026-01-02T00:00:00",
+            "order": 0,
+        },
+    ]
+
+    app_inst.duplicate_tile(0)
+    assert len(app_inst.tiles) == 2
+    assert app_inst.tiles[0]["run_on_start"] is True   # Original remains untouched
+    assert app_inst.tiles[1]["run_on_start"] is False  # Duplicate is reset to False
+
+
 
 
 

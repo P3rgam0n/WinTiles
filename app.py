@@ -292,6 +292,14 @@ TRANSLATIONS = {
         "toast_autostart_disabled": "🚀 System autostart: Disabled",
         "autostart_error_title": "Autostart Error",
         "autostart_error_msg": "Failed to update startup configuration:\n{}",
+        "tile_run_on_start": "Run on start",
+        "tile_run_on_start_enable": "Enable run on WinTiles start",
+        "tile_run_on_start_disable": "Disable run on WinTiles start",
+        "toast_run_on_start_enabled": "🚀 '{}' will run on WinTiles start",
+        "toast_run_on_start_disabled": "🚀 '{}' will no longer run on start",
+        "toast_autorun_executed": "🚀 Auto-started {} tile(s)",
+        "tt_tile_autorun_active": "🚀 Runs automatically on WinTiles startup (click to toggle)",
+        "field_run_on_start": "Run automatically on WinTiles startup",
     },
     LANG_PL: {
         "app_title": "WinTiles - Ułatwienie Pracy",
@@ -398,6 +406,14 @@ TRANSLATIONS = {
         "toast_autostart_disabled": "🚀 Autostart przy starcie systemu: Wyłączony",
         "autostart_error_title": "Błąd autostartu",
         "autostart_error_msg": "Nie udało się zaktualizować konfiguracji autostartu:\n{}",
+        "tile_run_on_start": "Uruchamiaj przy starcie",
+        "tile_run_on_start_enable": "Włącz uruchamianie przy starcie WinTiles",
+        "tile_run_on_start_disable": "Wyłącz uruchamianie przy starcie WinTiles",
+        "toast_run_on_start_enabled": "🚀 '{}' uruchomi się przy starcie WinTiles",
+        "toast_run_on_start_disabled": "🚀 '{}' nie będzie już uruchamiany przy starcie",
+        "toast_autorun_executed": "🚀 Automatycznie uruchomiono {} kafelek(ów)",
+        "tt_tile_autorun_active": "🚀 Uruchamiany automatycznie przy starcie WinTiles (kliknij, aby przełączyć)",
+        "field_run_on_start": "Uruchamiaj automatycznie przy starcie WinTiles",
     },
 }
 
@@ -880,6 +896,7 @@ class EditTileDialog(tk.Toplevel):
         self.var_target = tk.StringVar(value=(tile or {}).get("target", ""))
         self.var_color = tk.StringVar(value=(tile or {}).get("color", DEFAULT_TILE_COLOR))
         self.var_description = tk.StringVar(value=(tile or {}).get("description", ""))
+        self.var_run_on_start = tk.BooleanVar(value=bool((tile or {}).get("run_on_start", False)))
 
         self.existing_use_count = int((tile or {}).get("use_count", 0))
         self.existing_created_at = (tile or {}).get("created_at")
@@ -1057,14 +1074,31 @@ class EditTileDialog(tk.Toplevel):
             bg=self.bg_color,
             fg=self.fg_color,
             font=("Segoe UI", 9, "bold"),
-        ).grid(row=6, column=0, sticky="w", pady=(0, 12))
+        ).grid(row=6, column=0, sticky="w", pady=(0, 10))
         ttk.Entry(container, textvariable=self.var_description, width=44).grid(
-            row=6, column=1, columnspan=2, sticky="ew", pady=(0, 12)
+            row=6, column=1, columnspan=2, sticky="ew", pady=(0, 10)
         )
+
+        # Run on start toggle checkbox
+        self.chk_run_on_start = tk.Checkbutton(
+            container,
+            text=" 🚀 " + self.t["field_run_on_start"],
+            variable=self.var_run_on_start,
+            bg=self.bg_color,
+            fg=self.fg_color,
+            activebackground=self.bg_color,
+            activeforeground=self.fg_color,
+            selectcolor=self.card_bg,
+            font=("Segoe UI", 9),
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2",
+        )
+        self.chk_run_on_start.grid(row=7, column=1, columnspan=2, sticky="w", pady=(0, 12))
 
         # Action Buttons
         btn_bar = tk.Frame(container, bg=self.bg_color)
-        btn_bar.grid(row=7, column=0, columnspan=3, sticky="e", pady=(4, 0))
+        btn_bar.grid(row=8, column=0, columnspan=3, sticky="e", pady=(4, 0))
 
         ttk.Button(btn_bar, text=self.t["cancel"], command=self._cancel).pack(side="right")
         ttk.Button(btn_bar, text=self.t["save"], command=self._save).pack(side="right", padx=(0, 8))
@@ -1188,6 +1222,7 @@ class EditTileDialog(tk.Toplevel):
             "target": target,
             "color": color,
             "description": description,
+            "run_on_start": bool(self.var_run_on_start.get()),
             "use_count": self.existing_use_count,
             "created_at": created_at,
             "last_used": self.existing_last_used,
@@ -1305,6 +1340,37 @@ class TileApp:
             self.sort_tiles(self.current_sort, autosave=False, show_toast=False)
         else:
             self.sort_tiles("manual", autosave=False, show_toast=False)
+
+        # Schedule auto-execution of marked tiles on application startup
+        self.root.after(500, self._execute_autorun_tiles)
+
+    def _execute_autorun_tiles(self):
+        """Execute all tiles marked with run_on_start=True at application startup.
+
+        Only runs when global system autostart is enabled (self.autostart == True).
+        This ensures per-tile autorun only triggers when WinTiles was started by the OS,
+        not when manually launched by the user.
+        """
+        if not getattr(self, "autostart", False):
+            return
+
+        autorun_tiles = [
+            (i, t) for i, t in enumerate(self.tiles)
+            if t.get("run_on_start", False)
+        ]
+        if not autorun_tiles:
+            return
+
+        executed = 0
+        for idx, tile in autorun_tiles:
+            try:
+                self.run_tile(idx)
+                executed += 1
+            except Exception:
+                pass
+
+        if executed:
+            self.show_toast(self.t["toast_autorun_executed"].format(executed))
 
     def _set_app_icon(self):
         base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
@@ -2088,6 +2154,7 @@ class TileApp:
                         or datetime.fromtimestamp(1700000000 + i * 60).isoformat(),
                         "last_used": str(item.get("last_used") or ""),
                         "order": int(item.get("order", i)),
+                        "run_on_start": bool(item.get("run_on_start", False)),
                     }
                     valid.append(tile)
 
@@ -2408,6 +2475,21 @@ class TileApp:
                 )
                 lbl_info.pack(side="right")
 
+            is_autorun = bool(tile.get("run_on_start", False))
+            lbl_autorun = None
+            if is_autorun:
+                autorun_fg = "#34d399" if self.dark_mode else "#059669"
+                lbl_autorun = tk.Label(
+                    top_row,
+                    text="🚀",
+                    font=("Segoe UI Emoji", 8),
+                    bg=self.c_surface,
+                    fg=autorun_fg,
+                    cursor="hand2",
+                    padx=2,
+                )
+                lbl_autorun.pack(side="right", padx=(0, 2))
+
             use_count = int(tile.get("use_count", 0))
             if use_count > 0:
                 lbl_cnt = tk.Label(
@@ -2460,6 +2542,8 @@ class TileApp:
             hover_widgets = [top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub]
             if lbl_info is not None:
                 hover_widgets.append(lbl_info)
+            if lbl_autorun is not None:
+                hover_widgets.append(lbl_autorun)
 
             card_info = {
                 "card": card,
@@ -2470,6 +2554,7 @@ class TileApp:
                 "widgets": [card, color_strip, content, top_row, lbl_icon, lbl_name, bot_row, lbl_badge, lbl_sub],
                 "hover_widgets": hover_widgets,
                 "lbl_info": lbl_info,
+                "lbl_autorun": lbl_autorun,
             }
             if use_count > 0:
                 card_info["widgets"].append(lbl_cnt)
@@ -2490,6 +2575,21 @@ class TileApp:
                 lbl_info.bind("<ButtonPress-1>", lambda e: "break", add="+")
                 lbl_info.bind("<ButtonRelease-1>", lambda e: "break", add="+")
                 lbl_info.bind("<MouseWheel>", self._on_mousewheel, add="+")
+
+            if lbl_autorun is not None:
+                tt_auto = Tooltip(
+                    lbl_autorun,
+                    lambda: self.t["tt_tile_autorun_active"],
+                    dark_mode=lambda: self.dark_mode,
+                )
+                self.tooltips.append(tt_auto)
+                lbl_autorun.bind(
+                    "<ButtonPress-1>",
+                    lambda e, idx=real_index: (self.toggle_tile_run_on_start(idx), "break")[1],
+                    add="+",
+                )
+                lbl_autorun.bind("<ButtonRelease-1>", lambda e: "break", add="+")
+                lbl_autorun.bind("<MouseWheel>", self._on_mousewheel, add="+")
 
             # Bind mouse events to card and all child widgets
             self._bind_card_events(card_info)
@@ -3118,6 +3218,7 @@ class TileApp:
                 "target": "",
                 "color": DEFAULT_TILE_COLOR,
                 "description": "",
+                "run_on_start": False,
                 "use_count": 0,
                 "created_at": datetime.now().isoformat(),
                 "last_used": "",
@@ -3161,6 +3262,7 @@ class TileApp:
         source = self.tiles[index]
         dup = copy.deepcopy(source)
         dup["name"] = f"{dup['name']}{self.t['copy_suffix']}"
+        dup["run_on_start"] = False
         dup["use_count"] = 0
         dup["created_at"] = datetime.now().isoformat()
         dup["last_used"] = ""
@@ -3224,9 +3326,32 @@ class TileApp:
         menu.add_command(label=f"✏️  {self.t['edit']}", command=lambda: self.edit_tile(index))
         menu.add_command(label=f"📋  {self.t['duplicate']}", command=lambda: self.duplicate_tile(index))
         menu.add_command(label=f"🔄  {self.t['reset_stats']}", command=lambda: self.reset_tile_stats(index))
+
+        is_autorun = bool(self.tiles[index].get("run_on_start", False))
+        autorun_label = (
+            f"🚀  {self.t['tile_run_on_start_disable']}"
+            if is_autorun
+            else f"🚀  {self.t['tile_run_on_start_enable']}"
+        )
+        menu.add_command(label=autorun_label, command=lambda: self.toggle_tile_run_on_start(index))
         menu.add_separator()
         menu.add_command(label=f"🗑️  {self.t['delete']}", command=lambda: self.delete_tile(index))
         menu.tk_popup(event.x_root, event.y_root)
+
+    def toggle_tile_run_on_start(self, index):
+        self._hide_all_tooltips()
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
+        tile = self.tiles[index]
+        new_val = not bool(tile.get("run_on_start", False))
+        tile["run_on_start"] = new_val
+        self.render_tiles()
+        self._autosave()
+        if new_val:
+            self.show_toast(self.t["toast_run_on_start_enabled"].format(tile["name"]))
+        else:
+            self.show_toast(self.t["toast_run_on_start_disabled"].format(tile["name"]))
 
     def _safe_tile_color(self, color):
         candidate = (color or "").strip() or DEFAULT_TILE_COLOR
