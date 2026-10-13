@@ -100,6 +100,7 @@ def test_config_parsing_and_migration(tk_root):
     parsed = app_inst._parse_config_payload(legacy_data)
     assert parsed is not None
     assert parsed["always_on_top"] is True
+    assert parsed["autostart"] is False
     assert parsed["dark_mode"] is True
     assert parsed["language"] == "pl"
     assert parsed["sort_by"] == "manual"
@@ -1343,8 +1344,9 @@ def test_header_tooltips_and_language_switching(tk_root):
             tile_app = TileApp(sub_top)
             assert len(tile_app.header_tooltips) >= 5
 
-            # Find tooltips for topmost and dark_mode buttons
+            # Find tooltips for topmost, autostart, and dark_mode buttons
             topmost_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_topmost)
+            autostart_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_autostart)
             dark_mode_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_dark_mode)
             clear_search_tt = next(tt for tt in tile_app.header_tooltips if tt.anchor_widget is tile_app.btn_clear_search)
 
@@ -1352,6 +1354,7 @@ def test_header_tooltips_and_language_switching(tk_root):
             tile_app.lang = LANG_PL
             assert topmost_tt.text_provider() == tile_app._get_lock_tooltip_text()
             assert "Tryb okna:" in topmost_tt.text_provider()
+            assert "Autostart systemu:" in autostart_tt.text_provider()
             assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_dark_mode"]
             assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_PL]["tt_clear_search"]
 
@@ -1359,6 +1362,7 @@ def test_header_tooltips_and_language_switching(tk_root):
             tile_app.lang = LANG_EN
             assert topmost_tt.text_provider() == tile_app._get_lock_tooltip_text()
             assert "Window mode:" in topmost_tt.text_provider()
+            assert "System autostart:" in autostart_tt.text_provider()
             assert dark_mode_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_dark_mode"]
             assert clear_search_tt.text_provider() == TRANSLATIONS[LANG_EN]["tt_clear_search"]
         finally:
@@ -1693,6 +1697,346 @@ def test_smart_window_lock_menu_and_theme_parity(tk_root, tmp_path):
         tile_app.set_lock_mode(app.LOCK_MODE_LOCKED, autosave=False, show_toast=False)
         assert tile_app.btn_topmost.cget("text") == "🔒"
         assert tile_app.btn_topmost.cget("fg") == "#b45309"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_autostart_command_resolution(monkeypatch):
+    """Verify autostart command line formulation for both script and frozen executable modes."""
+    # Script mode
+    cmd_script = app.get_autostart_command()
+    assert str(Path(app.__file__).resolve()) in cmd_script
+    assert cmd_script.startswith('"')
+
+    # Frozen exe mode
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", "/fake/bin/WinTiles.exe")
+    cmd_frozen = app.get_autostart_command()
+    assert "/fake/bin/WinTiles.exe" in cmd_frozen
+
+
+def test_linux_autostart_file_lifecycle(tmp_path, monkeypatch):
+    """Verify Linux XDG autostart desktop file creation, inspection, and removal."""
+    fake_config = tmp_path / ".config"
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(fake_config))
+
+    desktop_path = fake_config / "autostart" / app.LINUX_DESKTOP_FILENAME
+    assert not desktop_path.exists()
+    assert app.is_linux_autostart_enabled() is False
+
+    # Enable autostart
+    res = app.set_linux_autostart(True)
+    assert res is True
+    assert desktop_path.is_file()
+    assert app.is_linux_autostart_enabled() is True
+
+    content = desktop_path.read_text(encoding="utf-8")
+    assert "[Desktop Entry]" in content
+    assert "Name=WinTiles" in content
+    assert "Exec=" in content
+
+    # Disable autostart
+    res_off = app.set_linux_autostart(False)
+    assert res_off is True
+    assert not desktop_path.exists()
+    assert app.is_linux_autostart_enabled() is False
+
+
+def test_windows_autostart_registry_mock(monkeypatch):
+    """Verify Windows registry query and update using a mock winreg module."""
+    reg_store = {}
+
+    class MockKey:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+    class MockWinreg:
+        HKEY_CURRENT_USER = "HKCU"
+        KEY_READ = 1
+        KEY_SET_VALUE = 2
+        REG_SZ = 1
+
+        @staticmethod
+        def OpenKey(hkey, subkey, reserved=0, access=0):
+            if access == MockWinreg.KEY_READ and app.REG_APP_NAME not in reg_store:
+                raise FileNotFoundError("Value not found")
+            return MockKey()
+
+        @staticmethod
+        def CreateKeyEx(hkey, subkey, reserved=0, access=0):
+            return MockKey()
+
+        @staticmethod
+        def QueryValueEx(key, name):
+            if name in reg_store:
+                return reg_store[name], MockWinreg.REG_SZ
+            raise FileNotFoundError(f"Name {name} not found")
+
+        @staticmethod
+        def SetValueEx(key, name, reserved, reg_type, val):
+            reg_store[name] = val
+
+        @staticmethod
+        def DeleteValue(key, name):
+            if name in reg_store:
+                del reg_store[name]
+            else:
+                raise FileNotFoundError()
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    import types
+    mock_mod = types.ModuleType("winreg")
+    for attr in dir(MockWinreg):
+        if not attr.startswith("__"):
+            setattr(mock_mod, attr, getattr(MockWinreg, attr))
+    monkeypatch.setitem(sys.modules, "winreg", mock_mod)
+
+    # Initially not enabled
+    assert app.is_windows_autostart_enabled() is False
+
+    # Enable
+    assert app.set_windows_autostart(True) is True
+    assert app.REG_APP_NAME in reg_store
+    assert app.is_windows_autostart_enabled() is True
+
+    # Disable
+    assert app.set_windows_autostart(False) is True
+    assert app.REG_APP_NAME not in reg_store
+    assert app.is_windows_autostart_enabled() is False
+
+
+def test_system_autostart_dispatchers(monkeypatch):
+    """Verify that is_system_autostart_enabled and set_system_autostart route based on sys.platform."""
+    calls = []
+
+    def mock_win_is():
+        calls.append("win_is")
+        return True
+
+    def mock_win_set(val):
+        calls.append(f"win_set_{val}")
+        return True
+
+    def mock_lin_is():
+        calls.append("lin_is")
+        return False
+
+    def mock_lin_set(val):
+        calls.append(f"lin_set_{val}")
+        return True
+
+    monkeypatch.setattr(app, "is_windows_autostart_enabled", mock_win_is)
+    monkeypatch.setattr(app, "set_windows_autostart", mock_win_set)
+    monkeypatch.setattr(app, "is_linux_autostart_enabled", mock_lin_is)
+    monkeypatch.setattr(app, "set_linux_autostart", mock_lin_set)
+
+    # Test win32 routing
+    monkeypatch.setattr(sys, "platform", "win32")
+    assert app.is_system_autostart_enabled() is True
+    assert "win_is" in calls
+    app.set_system_autostart(True)
+    assert "win_set_True" in calls
+
+    # Test linux routing
+    monkeypatch.setattr(sys, "platform", "linux")
+    assert app.is_system_autostart_enabled() is False
+    assert "lin_is" in calls
+    app.set_system_autostart(False)
+    assert "lin_set_False" in calls
+
+
+def test_tile_app_autostart_toggle_and_toast(tk_root, tmp_path, monkeypatch):
+    """Verify toggling autostart from TileApp, updating UI, toast feedback, and autosave."""
+    cfg_file = tmp_path / "test_autostart.json"
+    cfg_file.write_text(json.dumps({"autostart": False, "tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    # Mock system autostart to avoid touching actual user system
+    system_calls = []
+
+    def fake_set_sys(val):
+        system_calls.append(val)
+        return True
+
+    monkeypatch.setattr(app, "set_system_autostart", fake_set_sys)
+
+    try:
+        tile_app = TileApp(sub_top)
+        assert tile_app.autostart is False
+        assert tile_app.btn_autostart.cget("text") == "🚀"
+
+        # Track toast notifications
+        toasts = []
+        tile_app.show_toast = lambda msg: toasts.append(msg)
+
+        # Toggle on
+        tile_app.toggle_autostart()
+        assert tile_app.autostart is True
+        assert tile_app.var_autostart.get() is True
+        assert system_calls[-1] is True
+        assert any("Enabled" in m or "Włączon" in m for m in toasts)
+
+        # Saved file should now have "autostart": true
+        data = json.loads(cfg_file.read_text(encoding="utf-8"))
+        assert data["autostart"] is True
+
+        # Toggle off
+        tile_app.toggle_autostart()
+        assert tile_app.autostart is False
+        assert tile_app.var_autostart.get() is False
+        assert system_calls[-1] is False
+        assert any("Disabled" in m or "Wyłączon" in m for m in toasts)
+
+        # Saved file should now have "autostart": false
+        data = json.loads(cfg_file.read_text(encoding="utf-8"))
+        assert data["autostart"] is False
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tile_app_autostart_button_theme_and_tooltips(tk_root, tmp_path, monkeypatch):
+    """Verify visual button states across themes and tooltip text providers."""
+    cfg_file = tmp_path / "test_autostart_theme.json"
+    cfg_file.write_text(json.dumps({"tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    monkeypatch.setattr(app, "set_system_autostart", lambda val: True)
+
+    try:
+        tile_app = TileApp(sub_top)
+
+        # Dark mode styling
+        tile_app.dark_mode = True
+        tile_app.set_autostart(True, autosave=False, show_toast=False)
+        assert tile_app.btn_autostart.cget("bg") == "#064e3b"
+        assert tile_app.btn_autostart.cget("fg") == "#34d399"
+
+        tile_app.set_autostart(False, autosave=False, show_toast=False)
+        assert tile_app.btn_autostart.cget("bg") == tile_app.c_surface
+        assert tile_app.btn_autostart.cget("fg") == tile_app.c_fg_muted
+
+        # Light mode styling
+        tile_app.dark_mode = False
+        tile_app.set_autostart(True, autosave=False, show_toast=False)
+        assert tile_app.btn_autostart.cget("bg") == "#ecfdf5"
+        assert tile_app.btn_autostart.cget("fg") == "#059669"
+
+        tile_app.set_autostart(False, autosave=False, show_toast=False)
+        assert tile_app.btn_autostart.cget("bg") == tile_app.c_surface
+        assert tile_app.btn_autostart.cget("fg") == tile_app.c_fg_muted
+
+        # Tooltips in Polish and English
+        tile_app.lang = LANG_PL
+        tile_app.autostart = True
+        tt_pl_on = tile_app._get_autostart_tooltip_text()
+        assert "Włączony" in tt_pl_on
+        assert "wyłączyć" in tt_pl_on
+
+        tile_app.autostart = False
+        tt_pl_off = tile_app._get_autostart_tooltip_text()
+        assert "Wyłączony" in tt_pl_off
+        assert "włączyć" in tt_pl_off
+
+        tile_app.lang = LANG_EN
+        tile_app.autostart = True
+        tt_en_on = tile_app._get_autostart_tooltip_text()
+        assert "Enabled" in tt_en_on
+        assert "disable" in tt_en_on
+
+        tile_app.autostart = False
+        tt_en_off = tile_app._get_autostart_tooltip_text()
+        assert "Disabled" in tt_en_off
+        assert "enable" in tt_en_off
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tile_app_autostart_lock_protection(tk_root, tmp_path, monkeypatch):
+    """Verify that in Click-Locked mode (LOCK_MODE_LOCKED), autostart toggle is protected from clicks."""
+    cfg_file = tmp_path / "test_autostart_lock.json"
+    cfg_file.write_text(json.dumps({"tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    monkeypatch.setattr(app, "set_system_autostart", lambda val: True)
+
+    try:
+        tile_app = TileApp(sub_top)
+        tile_app.set_lock_mode(app.LOCK_MODE_LOCKED, autosave=False, show_toast=False)
+        tile_app.autostart = False
+
+        toasts = []
+        tile_app.show_toast = lambda msg: toasts.append(msg)
+
+        # Attempt to toggle autostart while window is locked
+        tile_app.toggle_autostart()
+        assert tile_app.autostart is False
+        assert any("locked" in m.lower() or "zablokowan" in m.lower() for m in toasts)
+
+        # Attempt to open menu while locked
+        toasts.clear()
+        tile_app.show_autostart_menu()
+        assert any("locked" in m.lower() or "zablokowan" in m.lower() for m in toasts)
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_tile_app_autostart_error_handling(tk_root, tmp_path, monkeypatch):
+    """Verify that if set_system_autostart fails, the app safely reverts state and displays an error."""
+    cfg_file = tmp_path / "test_autostart_err.json"
+    cfg_file.write_text(json.dumps({"autostart": False, "tiles": []}), encoding="utf-8")
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+
+    def faulty_set_autostart(val):
+        raise PermissionError("Access denied to registry")
+
+    monkeypatch.setattr(app, "set_system_autostart", faulty_set_autostart)
+
+    error_boxes = []
+    monkeypatch.setattr(app.messagebox, "showerror", lambda title, msg, **kw: error_boxes.append((title, msg)))
+
+    try:
+        tile_app = TileApp(sub_top)
+        assert tile_app.autostart is False
+
+        res = tile_app.set_autostart(True)
+        assert res is False
+        assert tile_app.autostart is False
+        assert len(error_boxes) == 1
+        assert "Access denied" in error_boxes[0][1]
     finally:
         app.PRIMARY_CONFIG_FILE = old_primary
         app.FALLBACK_CONFIG_FILE = old_fallback

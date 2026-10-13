@@ -94,8 +94,21 @@ A single, clean multi-functional button that combines window pinning and click-p
   - **Right Click**: Opens a compact context popup to choose any mode instantly.
   - **Keyboard Shortcut**: `Ctrl + L` anywhere in the app.
 
-### 7. Modern Windows 11 UI
-- **Header Tooltips**: Hover over control buttons (Smart Lock **📌/🔒**, dark mode **🌙/☀️**, clear search **✕**, add tile, save) for quick contextual hints.
+### 7. System Autostart on Boot (🚀 Button)
+Easily toggle automatic launch when Windows (or Linux) boots up:
+- **Instant One-Click Toggle**: Click the **🚀** icon in the header bar to immediately enable or disable launch on system startup.
+- **Vivid Status Indicator**:
+  - **Enabled**: Glowing emerald green accent (`#064e3b` / `#34d399` in dark mode, `#ecfdf5` / `#059669` in light mode) with real-time toast feedback.
+  - **Disabled**: Clean, neutral toolbar button style.
+- **Native OS Integration**:
+  - **Windows**: Writes directly to `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` (visible in Windows 11 Task Manager Startup Apps).
+  - **Linux**: Creates standard XDG autostart entry in `~/.config/autostart/WinTiles.desktop`.
+- **Keyboard Shortcut**: `Ctrl + B` for instant toggling from anywhere.
+- **Right-Click Context Menu**: Explicit direct mode selection menu.
+- **HUD Lock Protection**: Fully protected against accidental clicks when the window is click-locked.
+
+### 8. Modern Windows 11 UI
+- **Header Tooltips**: Hover over control buttons (Smart Lock **📌/🔒**, autostart **🚀**, dark mode **🌙/☀️**, clear search **✕**, add tile, save) for quick contextual hints.
 - **Windows 11 Dark Title Bar**: Native DWM integration for seamless dark title bars.
 - **Live Search**: Instant real-time tile filtering by name, action type, target path, or description.
 - **Right-Click Context Menu**:
@@ -134,6 +147,7 @@ Settings and tiles are saved to `tiles.json`. Sample clean configuration:
 {
   "always_on_top": false,
   "window_lock_mode": "normal",
+  "autostart": false,
   "dark_mode": true,
   "language": "en",
   "sort_by": "manual",

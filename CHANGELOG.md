@@ -3,6 +3,26 @@
 All notable changes to the WinTiles project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-10-13
+
+### Added
+- **System Startup & Autostart Toggle Button (`🚀`)**:
+  - Full operating system autostart integration allowing users to toggle whether WinTiles launches automatically on system boot.
+  - Native Windows Registry integration (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) supporting both packaged standalone executables (`WinTiles.exe`) and Python source execution (`pythonw.exe` / `python.exe`).
+  - Cross-platform support for Linux via XDG Autostart desktop entry specification (`~/.config/autostart/WinTiles.desktop`).
+  - Modern, responsive header toolbar button (`🚀`) with distinct visual feedback:
+    - **Active state**: Emerald green container (`#064e3b` / `#34d399` in dark mode, `#ecfdf5` / `#059669` in light mode) with high-visibility accent border.
+    - **Inactive state**: Clean neutral surface style matching other toolbar buttons.
+  - Multi-faceted control mechanisms:
+    - **Single Click**: Instant toggle between enabled and disabled with instant toast notifications.
+    - **Right Click**: Context popup menu for direct explicit selection ("Enable start on system boot" / "Disable start on system boot").
+    - **Global Keyboard Shortcut**: `Ctrl + B` for rapid toggling.
+  - Integration with Click-Locked HUD mode (prevents accidental modification when locked).
+  - Contextual hover tooltips dynamically indicating current autostart status and toggle instructions in both Polish and English.
+  - Full configuration persistence in `tiles.json` (`"autostart": true/false`) with legacy configuration backward-compatibility.
+- **Automated Tests**:
+  - Added comprehensive test suite with 8 new unit and integration tests covering command line formatting, Linux desktop file lifecycle, Windows registry operations with mocks, OS dispatchers, UI toggle, theme parity, lock protection, and error handling (52 total passing tests).
+
 ## [1.1.0] - 2026-10-11
 
 ### Added

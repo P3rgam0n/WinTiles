@@ -281,6 +281,17 @@ TRANSLATIONS = {
             "Provide e.g.: C:\\Users\\<user>\\AppData\\Local\\Google\\Chrome\\User Data\\Default"
         ),
         "unknown_action": "Unknown action type: {}",
+        "autostart_status_enabled": "Enabled",
+        "autostart_status_disabled": "Disabled",
+        "tt_autostart_hint_enable": "Click to enable autostart on system boot",
+        "tt_autostart_hint_disable": "Click to disable autostart on system boot",
+        "tt_autostart": "System autostart: {}\n• {}\n• Shortcut: Ctrl+B",
+        "menu_autostart_enable": "Enable start on system boot",
+        "menu_autostart_disable": "Disable start on system boot",
+        "toast_autostart_enabled": "🚀 System autostart: Enabled",
+        "toast_autostart_disabled": "🚀 System autostart: Disabled",
+        "autostart_error_title": "Autostart Error",
+        "autostart_error_msg": "Failed to update startup configuration:\n{}",
     },
     LANG_PL: {
         "app_title": "WinTiles - Ułatwienie Pracy",
@@ -376,6 +387,17 @@ TRANSLATIONS = {
             "Podaj np.: C:\\Users\\<user>\\AppData\\Local\\Google\\Chrome\\User Data\\Default"
         ),
         "unknown_action": "Nieznany typ akcji: {}",
+        "autostart_status_enabled": "Włączony",
+        "autostart_status_disabled": "Wyłączony",
+        "tt_autostart_hint_enable": "Kliknij, aby włączyć autostart przy starcie systemu",
+        "tt_autostart_hint_disable": "Kliknij, aby wyłączyć autostart przy starcie systemu",
+        "tt_autostart": "Autostart systemu: {}\n• {}\n• Skrót: Ctrl+B",
+        "menu_autostart_enable": "Włącz uruchamianie przy starcie",
+        "menu_autostart_disable": "Wyłącz uruchamianie przy starcie",
+        "toast_autostart_enabled": "🚀 Autostart przy starcie systemu: Włączony",
+        "toast_autostart_disabled": "🚀 Autostart przy starcie systemu: Wyłączony",
+        "autostart_error_title": "Błąd autostartu",
+        "autostart_error_msg": "Nie udało się zaktualizować konfiguracji autostartu:\n{}",
     },
 }
 
@@ -474,6 +496,134 @@ def apply_windows_dark_titlebar(window, dark: bool):
             )
     except Exception:
         pass
+
+
+REG_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+REG_APP_NAME = "WinTiles"
+LINUX_DESKTOP_FILENAME = "WinTiles.desktop"
+
+
+def get_autostart_command():
+    if getattr(sys, "frozen", False):
+        exe_path = Path(sys.executable).resolve()
+        return f'"{exe_path}"'
+
+    py_exe = Path(sys.executable).resolve()
+    if sys.platform == "win32":
+        pyw_exe = py_exe.with_name("pythonw.exe")
+        if pyw_exe.exists():
+            py_exe = pyw_exe
+
+    script_path = Path(__file__).resolve()
+    return f'"{py_exe}" "{script_path}"'
+
+
+def is_windows_autostart_enabled():
+    if sys.platform != "win32":
+        return False
+    try:
+        import winreg
+
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            REG_RUN_KEY,
+            0,
+            winreg.KEY_READ,
+        ) as key:
+            try:
+                val, _ = winreg.QueryValueEx(key, REG_APP_NAME)
+                return bool(val)
+            except FileNotFoundError:
+                return False
+    except Exception:
+        return False
+
+
+def set_windows_autostart(enabled: bool):
+    if sys.platform != "win32":
+        return False
+    import winreg
+
+    try:
+        if enabled:
+            with winreg.CreateKeyEx(
+                winreg.HKEY_CURRENT_USER,
+                REG_RUN_KEY,
+                0,
+                winreg.KEY_SET_VALUE,
+            ) as key:
+                cmd = get_autostart_command()
+                winreg.SetValueEx(key, REG_APP_NAME, 0, winreg.REG_SZ, cmd)
+        else:
+            with winreg.OpenKey(
+                winreg.HKEY_CURRENT_USER,
+                REG_RUN_KEY,
+                0,
+                winreg.KEY_SET_VALUE,
+            ) as key:
+                try:
+                    winreg.DeleteValue(key, REG_APP_NAME)
+                except FileNotFoundError:
+                    pass
+        return True
+    except Exception as exc:
+        raise exc
+
+
+def get_linux_autostart_path():
+    xdg_config = os.getenv("XDG_CONFIG_HOME")
+    if xdg_config:
+        base_dir = Path(xdg_config)
+    else:
+        base_dir = Path.home() / ".config"
+    return base_dir / "autostart" / LINUX_DESKTOP_FILENAME
+
+
+def is_linux_autostart_enabled():
+    try:
+        path = get_linux_autostart_path()
+        return path.is_file()
+    except Exception:
+        return False
+
+
+def set_linux_autostart(enabled: bool):
+    path = get_linux_autostart_path()
+    if enabled:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        cmd = get_autostart_command()
+        desktop_content = (
+            "[Desktop Entry]\n"
+            "Type=Application\n"
+            "Version=1.0\n"
+            "Name=WinTiles\n"
+            "GenericName=Productivity Launcher\n"
+            "Comment=WinTiles Desktop Productivity Launcher\n"
+            f"Exec={cmd}\n"
+            "Terminal=false\n"
+            "StartupNotify=false\n"
+            "Categories=Utility;\n"
+        )
+        path.write_text(desktop_content, encoding="utf-8")
+    else:
+        if path.exists():
+            try:
+                path.unlink()
+            except OSError:
+                pass
+    return True
+
+
+def is_system_autostart_enabled():
+    if sys.platform == "win32":
+        return is_windows_autostart_enabled()
+    return is_linux_autostart_enabled()
+
+
+def set_system_autostart(enabled: bool):
+    if sys.platform == "win32":
+        return set_windows_autostart(enabled)
+    return set_linux_autostart(enabled)
 
 
 def format_datetime_display(iso_str):
@@ -1092,6 +1242,13 @@ class TileApp:
             else:
                 self.window_lock_mode = LOCK_MODE_NORMAL
         self.always_on_top = self.window_lock_mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED)
+        if "autostart" in config:
+            self.autostart = bool(config.get("autostart", False))
+        else:
+            try:
+                self.autostart = is_system_autostart_enabled()
+            except Exception:
+                self.autostart = False
         self.dark_mode = bool(config.get("dark_mode", False))
         self.opacity = float(config.get("opacity", 1.0))
         self.opacity = max(0.10, min(1.0, self.opacity))
@@ -1115,6 +1272,7 @@ class TileApp:
 
         self.var_topmost = tk.BooleanVar(value=self.always_on_top)
         self.var_lock_mode = tk.StringVar(value=self.window_lock_mode)
+        self.var_autostart = tk.BooleanVar(value=self.autostart)
         self.var_dark_mode = tk.BooleanVar(value=self.dark_mode)
         self.var_language = tk.StringVar(value=LANG_NAMES.get(self.lang, "English"))
         self.var_search = tk.StringVar(value="")
@@ -1137,6 +1295,8 @@ class TileApp:
         self.root.bind("<Unmap>", self._on_root_unmap, add="+")
         self.root.bind("<Control-l>", lambda e: self.cycle_lock_mode())
         self.root.bind("<Control-L>", lambda e: self.cycle_lock_mode())
+        self.root.bind("<Control-b>", lambda e: self.toggle_autostart())
+        self.root.bind("<Control-B>", lambda e: self.toggle_autostart())
         self.root.bind("<Deactivate>", lambda e: self._hide_all_tooltips(), add="+")
         self.root.bind("<FocusOut>", self._on_root_focus_out, add="+")
         self.apply_theme()
@@ -1288,6 +1448,21 @@ class TileApp:
         self.btn_topmost.bind("<Button-3>", self.show_lock_mode_menu)
         self.btn_lock_mode = self.btn_topmost
 
+        # Autostart Toggle Button (System Boot Startup)
+        self.btn_autostart = tk.Button(
+            self.ctrl_frame,
+            text="🚀",
+            font=("Segoe UI Emoji", 10),
+            bd=1,
+            relief="solid",
+            cursor="hand2",
+            padx=4,
+            pady=2,
+            command=self.toggle_autostart,
+        )
+        self.btn_autostart.pack(side="left", padx=(0, 6))
+        self.btn_autostart.bind("<Button-3>", self.show_autostart_menu)
+
         # Dark Mode Toggle Button
         self.btn_dark_mode = tk.Button(
             self.ctrl_frame,
@@ -1363,6 +1538,7 @@ class TileApp:
         # Header tooltips
         self.header_tooltips = [
             Tooltip(self.btn_topmost, self._get_lock_tooltip_text, dark_mode=lambda: self.dark_mode),
+            Tooltip(self.btn_autostart, self._get_autostart_tooltip_text, dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_dark_mode, lambda: self.t["tt_dark_mode"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_clear_search, lambda: self.t["tt_clear_search"], dark_mode=lambda: self.dark_mode),
             Tooltip(self.btn_add_tile, lambda: self.t["tt_add_tile"], dark_mode=lambda: self.dark_mode),
@@ -1484,6 +1660,7 @@ class TileApp:
         self.var_sort.set(key_to_disp.get(self.current_sort, t["sort_manual"]))
 
         self._update_lock_button_appearance()
+        self._update_autostart_button_appearance()
         self.update_status_hint()
         self.btn_dark_mode.configure(text="🌙" if self.dark_mode else "☀️")
 
@@ -1637,6 +1814,118 @@ class TileApp:
             relief="solid",
         )
 
+    def _get_autostart_tooltip_text(self):
+        t = self.t
+        is_on = getattr(self, "autostart", False)
+        status_text = t["autostart_status_enabled"] if is_on else t["autostart_status_disabled"]
+        hint_text = t["tt_autostart_hint_disable"] if is_on else t["tt_autostart_hint_enable"]
+        return t["tt_autostart"].format(status_text, hint_text)
+
+    def _update_autostart_button_appearance(self):
+        if not hasattr(self, "btn_autostart"):
+            return
+        is_on = getattr(self, "autostart", False)
+        if is_on:
+            # Active Autostart state: Emerald Green Accent
+            if self.dark_mode:
+                bg = "#064e3b"
+                fg = "#34d399"
+                hl = "#10b981"
+                active_bg = "#047857"
+            else:
+                bg = "#ecfdf5"
+                fg = "#059669"
+                hl = "#10b981"
+                active_bg = "#d1fae5"
+        else:
+            # Inactive Autostart state: Neutral Muted
+            bg = self.c_surface
+            fg = self.c_fg_muted
+            hl = self.c_border
+            active_bg = self.c_surface_hover
+
+        self.btn_autostart.configure(
+            text="🚀",
+            bg=bg,
+            fg=fg,
+            highlightbackground=hl,
+            highlightcolor=hl,
+            activebackground=active_bg,
+            activeforeground=fg,
+            relief="solid",
+        )
+
+    def toggle_autostart(self):
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
+        curr_val = getattr(self, "autostart", False)
+        self.set_autostart(not curr_val)
+
+    def set_autostart(self, enabled: bool, autosave: bool = True, show_toast: bool = True):
+        prev_state = getattr(self, "autostart", False)
+        try:
+            set_system_autostart(enabled)
+            self.autostart = bool(enabled)
+            if hasattr(self, "var_autostart"):
+                self.var_autostart.set(self.autostart)
+            self._update_autostart_button_appearance()
+            if show_toast:
+                if self.autostart:
+                    self.show_toast(self.t["toast_autostart_enabled"])
+                else:
+                    self.show_toast(self.t["toast_autostart_disabled"])
+            if autosave:
+                self._autosave()
+            return True
+        except Exception as exc:
+            self.autostart = prev_state
+            if hasattr(self, "var_autostart"):
+                self.var_autostart.set(prev_state)
+            self._update_autostart_button_appearance()
+            messagebox.showerror(
+                self.t["autostart_error_title"],
+                self.t["autostart_error_msg"].format(str(exc)),
+                parent=self.root,
+            )
+            return False
+
+    def show_autostart_menu(self, event=None):
+        self._hide_all_tooltips()
+        if getattr(self, "window_lock_mode", LOCK_MODE_NORMAL) == LOCK_MODE_LOCKED:
+            self.show_toast(self.t["toast_locked_tile_click"])
+            return
+        menu = tk.Menu(
+            self.root,
+            tearoff=0,
+            bg=self.c_surface,
+            fg=self.c_fg,
+            activebackground=self.c_accent,
+            activeforeground=self.c_accent_fg,
+            bd=1,
+            relief="solid",
+        )
+        is_on = getattr(self, "autostart", False)
+        prefix_on = "✓ " if is_on else "    "
+        prefix_off = "✓ " if not is_on else "    "
+
+        menu.add_command(
+            label=f"{prefix_on}{self.t['menu_autostart_enable']}",
+            command=lambda: self.set_autostart(True),
+        )
+        menu.add_command(
+            label=f"{prefix_off}{self.t['menu_autostart_disable']}",
+            command=lambda: self.set_autostart(False),
+        )
+
+        if event:
+            x = event.x_root
+            y = event.y_root
+        else:
+            x = self.btn_autostart.winfo_rootx()
+            y = self.btn_autostart.winfo_rooty() + self.btn_autostart.winfo_height() + 2
+        menu.tk_popup(x, y)
+
     def update_status_hint(self):
         if not hasattr(self, "lbl_status_hint"):
             return
@@ -1710,6 +1999,7 @@ class TileApp:
         )
 
         self._update_lock_button_appearance()
+        self._update_autostart_button_appearance()
         self.btn_dark_mode.configure(
             bg=self.c_surface,
             fg=self.c_fg,
@@ -1810,6 +2100,7 @@ class TileApp:
                 return {
                     "always_on_top": False,
                     "window_lock_mode": LOCK_MODE_NORMAL,
+                    "autostart": False,
                     "dark_mode": False,
                     "opacity": 1.0,
                     "language": LANG_EN,
@@ -1824,6 +2115,7 @@ class TileApp:
             window_lock_mode = data.get("window_lock_mode")
             if window_lock_mode not in LOCK_MODES:
                 window_lock_mode = LOCK_MODE_TOPMOST if always_on_top else LOCK_MODE_NORMAL
+            autostart = bool(data.get("autostart", False))
             dark_mode = bool(data.get("dark_mode", False))
             try:
                 opacity = float(data.get("opacity", 1.0))
@@ -1840,6 +2132,7 @@ class TileApp:
                 return {
                     "always_on_top": window_lock_mode in (LOCK_MODE_TOPMOST, LOCK_MODE_LOCKED),
                     "window_lock_mode": window_lock_mode,
+                    "autostart": autostart,
                     "dark_mode": dark_mode,
                     "opacity": opacity,
                     "language": language,
@@ -1871,6 +2164,7 @@ class TileApp:
             payload = {
                 "always_on_top": False,
                 "window_lock_mode": LOCK_MODE_NORMAL,
+                "autostart": False,
                 "dark_mode": False,
                 "opacity": 1.0,
                 "language": LANG_EN,
@@ -1908,6 +2202,7 @@ class TileApp:
         return {
             "always_on_top": is_topmost,
             "window_lock_mode": curr_mode,
+            "autostart": bool(getattr(self, "autostart", False)),
             "dark_mode": bool(self.var_dark_mode.get()),
             "opacity": round(float(self.opacity), 2),
             "language": self.lang,
