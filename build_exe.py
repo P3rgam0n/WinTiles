@@ -67,8 +67,9 @@ def build_executable():
         f"{ASSETS_DIR}{os.pathsep}assets",
     ]
 
-    if (REPO_ROOT / "tiles.json").exists():
-        cmd.extend(["--add-data", f"{REPO_ROOT / 'tiles.json'}{os.pathsep}."])
+    example_config = REPO_ROOT / "tiles.example.json"
+    if example_config.exists():
+        cmd.extend(["--add-data", f"{example_config}{os.pathsep}."])
 
     if has_icon and ICON_ICO.exists():
         cmd.extend(["--icon", str(ICON_ICO)])
@@ -106,8 +107,8 @@ def build_executable():
             zf.write(REPO_ROOT / "README.md", arcname="README.md")
         if (REPO_ROOT / "CHANGELOG.md").exists():
             zf.write(REPO_ROOT / "CHANGELOG.md", arcname="CHANGELOG.md")
-        if (REPO_ROOT / "tiles.json").exists():
-            zf.write(REPO_ROOT / "tiles.json", arcname="tiles.sample.json")
+        if example_config.exists():
+            zf.write(example_config, arcname="tiles.example.json")
 
     zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
     print(f"[SUCCESS] Release archive ready: {zip_path} ({zip_size_mb:.2f} MB)")

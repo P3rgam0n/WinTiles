@@ -1,0 +1,131 @@
+{
+  "always_on_top": false,
+  "window_lock_mode": "normal",
+  "autostart": false,
+  "dark_mode": true,
+  "opacity": 1.0,
+  "language": "en",
+  "sort_by": "manual",
+  "tiles": [
+    {
+      "name": "Google Search",
+      "action_type": "url",
+      "target": "https://www.google.com",
+      "color": "#0284c7",
+      "description": "Default web search engine",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 0,
+      "run_on_start": false
+    },
+    {
+      "name": "WinTiles GitHub",
+      "action_type": "url",
+      "target": "https://github.com/P3rgam0n",
+      "color": "#4f46e5",
+      "description": "WinTiles GitHub repository",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 1,
+      "run_on_start": false
+    },
+    {
+      "name": "PowerShell Console",
+      "action_type": "exe",
+      "target": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "color": "#0078d4",
+      "description": "Windows PowerShell console",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 2,
+      "run_on_start": false
+    },
+    {
+      "name": "System Notepad",
+      "action_type": "exe",
+      "target": "C:\\Windows\\System32\\notepad.exe",
+      "color": "#06b6d4",
+      "description": "Windows text editor",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 3,
+      "run_on_start": false
+    },
+    {
+      "name": "Public Documents",
+      "action_type": "path",
+      "target": "C:\\Users\\Public\\Documents",
+      "color": "#8b5cf6",
+      "description": "Public documents directory",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 4,
+      "run_on_start": false
+    },
+    {
+      "name": "Command Prompt",
+      "action_type": "exe",
+      "target": "C:\\Windows\\System32\\cmd.exe",
+      "color": "#64748b",
+      "description": "Windows CMD console",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 5,
+      "run_on_start": false
+    },
+    {
+      "name": "VS Code Workspace",
+      "action_type": "vscode",
+      "target": ".",
+      "color": "#007acc",
+      "description": "Open current directory in Visual Studio Code",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 6,
+      "run_on_start": false
+    },
+    {
+      "name": "Terminal in Folder",
+      "action_type": "terminal",
+      "target": ".",
+      "color": "#10b981",
+      "description": "Open Windows Terminal in current directory",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 7,
+      "run_on_start": false
+    },
+    {
+      "name": "Sample Prompt",
+      "action_type": "clipboard",
+      "target": "Welcome to WinTiles! Your quick desktop productivity launcher.",
+      "color": "#f59e0b",
+      "description": "Copy sample prompt text to clipboard",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 8,
+      "run_on_start": false
+    },
+    {
+      "name": "Google Web Search",
+      "action_type": "websearch",
+      "target": "WinTiles Windows launcher",
+      "color": "#ec4899",
+      "description": "Search web for query in default browser",
+      "use_count": 0,
+      "created_at": "2026-09-14T10:00:00",
+      "last_used": "",
+      "order": 9,
+      "run_on_start": false
+    }
+  ]
+}

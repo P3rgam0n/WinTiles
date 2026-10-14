@@ -10,3 +10,5 @@ release/
 .~lock*
 .codex-tmp/
 scratch/
+tiles.json
+tiles.local.json

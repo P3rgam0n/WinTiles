@@ -518,13 +518,7 @@ TRANSLATIONS = {
 }
 
 
-def _primary_config_file():
-    if getattr(sys, "frozen", False):
-        return Path(sys.executable).resolve().with_name("tiles.json")
-    return Path(__file__).resolve().with_name("tiles.json")
-
-
-def _fallback_config_file():
+def _user_config_file():
     appdata = os.getenv("APPDATA")
     if appdata:
         p = Path(appdata) / APP_CONFIG_DIR_NAME / "tiles.json"
@@ -541,8 +535,43 @@ def _fallback_config_file():
     return default_p
 
 
+def _primary_config_file():
+    """
+    Primary configuration path resolution:
+    - If packaged as a frozen binary (PyInstaller) and a portable 'tiles.json' exists
+      alongside the executable, respect portable mode.
+    - In dev mode (running from Python source) and standard user installs, ALWAYS save
+      runtime configuration in the user data directory (%APPDATA%\\WinTiles\\tiles.json
+      on Windows, ~/.wintiles/tiles.json on Linux) to prevent polluting the Git repository.
+    """
+    if getattr(sys, "frozen", False):
+        portable = Path(sys.executable).resolve().with_name("tiles.json")
+        if portable.exists():
+            return portable
+    return _user_config_file()
+
+
+def _fallback_config_file():
+    return _user_config_file()
+
+
 def _bundled_seed_config_file():
-    return Path(__file__).resolve().with_name("tiles.json")
+    """
+    Seed template configuration resolution:
+    Checks for clean seed template tiles.example.json in PyInstaller bundle (_MEIPASS)
+    or source tree, falling back to tiles.json if present.
+    """
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    for name in ("tiles.example.json", "tiles.json"):
+        cand = base / name
+        if cand.exists():
+            return cand
+    src_parent = Path(__file__).resolve().parent
+    for name in ("tiles.example.json", "tiles.json"):
+        cand = src_parent / name
+        if cand.exists():
+            return cand
+    return src_parent / "tiles.example.json"
 
 
 PRIMARY_CONFIG_FILE = _primary_config_file()

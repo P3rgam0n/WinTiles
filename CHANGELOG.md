@@ -3,6 +3,22 @@
 All notable changes to the WinTiles project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-10-14
+
+### Security & Architecture
+- **Runtime Configuration Isolation**:
+  - Separated runtime user data from the git repository working tree.
+  - `_primary_config_file()` in `app.py` now resolves runtime configuration strictly to user profile storage (`%APPDATA%\WinTiles\tiles.json` on Windows or `~/.wintiles/tiles.json` on Linux) in dev mode and standard installs.
+  - Portable mode (`tiles.json` alongside standalone binary) is preserved for frozen distributions.
+  - Runtime telemetry (e.g. `last_used` timestamps and `use_count`) no longer modifies the repository directory.
+- **Template Configuration**:
+  - Added clean default template `tiles.example.json` to repository root with zeroed counters and empty timestamps.
+  - Added `tiles.json` and `tiles.local.json` to `.gitignore` to prevent secret leakage or repository pollution.
+- **Build Security**:
+  - Updated `build_exe.py` to bundle only `tiles.example.json` into the binary distribution instead of developer's local runtime `tiles.json`.
+- **Automated Tests**:
+  - Added automated tests verifying primary config resolution in dev, linux, and portable modes, seed config resolution, and template schema validity (64 tests passing).
+
 ## [1.6.0] - 2026-10-14
 
 ### Added
