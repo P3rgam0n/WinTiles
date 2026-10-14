@@ -2186,6 +2186,297 @@ def test_duplicate_tile_clears_run_on_start(tk_root):
     assert app_inst.tiles[1]["run_on_start"] is False  # Duplicate is reset to False
 
 
+def test_normalize_diacritics_and_fuzzy_match_engine(tk_root, tmp_path):
+    """Verify diacritics normalization, fuzzy matching score, word prefix, acronyms, and tile scoring."""
+    # 1. Direct diacritics normalization
+    assert app.normalize_diacritics("Zażółć gęślą jaźń") == "zazolc gesla jazn"
+    assert app.normalize_diacritics("Ścieżki WSL") == "sciezki wsl"
+    assert app.normalize_diacritics("ąęćłńóśźż") == "aeclnoszz"
+    assert app.normalize_diacritics("") == ""
+
+    # 2. Fuzzy match scoring
+    # Exact match
+    score_exact = app.fuzzy_match_score("sciezki", "Ścieżki")
+    assert score_exact >= 1000
+
+    # Prefix match without diacritics
+    score_pref = app.fuzzy_match_score("sciezki", "Ścieżki WSL")
+    assert score_pref >= 800
+
+    # Word prefix match
+    score_word = app.fuzzy_match_score("wsl", "Ścieżki WSL")
+    assert score_word >= 600
+
+    # Acronym match ("sw" -> "Ścieżki WSL")
+    score_acronym = app.fuzzy_match_score("sw", "Ścieżki WSL")
+    assert score_acronym >= 450
+
+    # Non-match
+    score_none = app.fuzzy_match_score("nonexistent", "Ścieżki WSL")
+    assert score_none == 0
+
+    # 3. Tile integration: search "sciezki" finds "Ścieżki WSL"
+    cfg_file = tmp_path / "tiles_fuzzy.json"
+    cfg_data = {
+        "tiles": [
+            {"name": "Ścieżki WSL", "action_type": "ps1", "target": "D:\\Git\\sciezka.ps1", "description": ""},
+            {"name": "Inna Kafelka", "action_type": "url", "target": "https://other.com", "description": ""},
+        ]
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        assert len(tile_app.rendered_cards) == 2
+
+        # Search without diacritics
+        tile_app.var_search.set("sciezki")
+        assert len(tile_app.rendered_cards) == 1
+        assert tile_app.rendered_cards[0]["tile"]["name"] == "Ścieżki WSL"
+
+        # Search acronym "sw"
+        tile_app.var_search.set("sw")
+        assert len(tile_app.rendered_cards) == 1
+        assert tile_app.rendered_cards[0]["tile"]["name"] == "Ścieżki WSL"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_widget_pool_recycling_and_performance(tk_root, tmp_path):
+    """Verify widget pool uses grid_remove/grid and updates 100 tiles in < 12 ms."""
+    import time
+
+    tiles_data = [
+        {
+            "name": f"Tile {i}",
+            "action_type": "url",
+            "target": f"https://example{i}.com",
+            "description": f"Description {i}",
+        }
+        for i in range(100)
+    ]
+    tiles_data[42]["name"] = "Ścieżki WSL"
+
+    cfg_file = tmp_path / "tiles_100.json"
+    cfg_file.write_text(json.dumps({"tiles": tiles_data}), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        assert len(tile_app.rendered_cards) == 100
+
+        # Initial card widgets cached
+        cached_card_ids = {id(info["card"]) for info in tile_app.rendered_cards}
+        assert len(cached_card_ids) == 100
+
+        # Filter by search query: measure grid update time
+        t_start = time.perf_counter()
+        tile_app.var_search.set("sciezki")
+        t_elapsed_ms = (time.perf_counter() - t_start) * 1000.0
+
+        # Assert filtered to 1 card and performance is under 12 ms
+        assert len(tile_app.rendered_cards) == 1
+        assert tile_app.rendered_cards[0]["tile"]["name"] == "Ścieżki WSL"
+        assert t_elapsed_ms < 12.0, f"Grid update took {t_elapsed_ms:.2f} ms (target < 12 ms)"
+
+        # Clear search: measure restore time
+        t_start2 = time.perf_counter()
+        tile_app.clear_search()
+        t_elapsed_ms2 = (time.perf_counter() - t_start2) * 1000.0
+
+        assert len(tile_app.rendered_cards) == 100
+        assert t_elapsed_ms2 < 12.0, f"Grid restore took {t_elapsed_ms2:.2f} ms (target < 12 ms)"
+
+        # Verify widgets were recycled (same card widget instances)
+        restored_card_ids = {id(info["card"]) for info in tile_app.rendered_cards}
+        assert restored_card_ids == cached_card_ids
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_search_debouncing_mechanism(tk_root, tmp_path):
+    """Verify that debouncing 15 ms via root.after is scheduled when typing."""
+    import time
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    cfg_file = tmp_path / "tiles_deb.json"
+    cfg_file.write_text(json.dumps({"tiles": [{"name": "Tile 1", "action_type": "url", "target": "https://a.com"}]}), encoding="utf-8")
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        tile_app._force_debounce = True
+        tile_app.search_debounce_ms = 15
+
+        # Trigger search changed with debouncing
+        tile_app.var_search.set("t")
+        tile_app.on_search_changed(debounce=True)
+
+        assert tile_app._search_debounce_id is not None
+
+        # Execute scheduled after callback
+        sub_top.update()
+        time.sleep(0.03)
+        sub_top.update()
+
+        assert tile_app.search_query == "t"
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+def test_async_dispatcher_and_immediate_feedback(tk_root, monkeypatch):
+    """Verify immediate visual feedback (<2 ms) and async daemon thread execution with error forwarding."""
+    import time
+    import threading
+
+    app_inst = TileApp.__new__(TileApp)
+    app_inst.root = tk_root
+    app_inst.lang = LANG_EN
+    app_inst.dark_mode = True
+    app_inst.c_border = "#374151"
+    app_inst._autosave = lambda: None
+    app_inst.render_tiles = lambda: None
+    app_inst.show_toast = lambda msg: None
+
+    # Dummy card frame for visual feedback test
+    dummy_card = tk.Frame(tk_root, bg="#111827", highlightbackground="#374151")
+    card_info = {
+        "card": dummy_card,
+        "real_index": 0,
+        "tile_color": "#0284c7",
+    }
+    app_inst.rendered_cards = [card_info]
+
+    # Test immediate feedback (<2 ms)
+    t0 = time.perf_counter()
+    app_inst._flash_tile_feedback(0)
+    t_feedback = (time.perf_counter() - t0) * 1000.0
+    assert t_feedback < 2.0, f"Feedback took {t_feedback:.2f} ms (target < 2 ms)"
+    assert dummy_card.cget("highlightbackground") == "#38bdf8"
+
+    # Test async execution in daemon thread
+    executed_in_thread = []
+    def slow_action(url, new=2):
+        executed_in_thread.append((threading.current_thread().name, url))
+
+    monkeypatch.setattr(app.webbrowser, "open", slow_action)
+    app_inst.tiles = [{"name": "Test Async", "action_type": "url", "target": "https://fast.com", "use_count": 0}]
+
+    thread = app_inst.run_tile(0, sync=False)
+    assert thread is not None
+    assert thread.daemon is True
+    thread.join(timeout=2.0)
+
+    assert len(executed_in_thread) == 1
+    assert executed_in_thread[0][1] == "https://fast.com"
+    assert app_inst.tiles[0]["use_count"] == 1
+
+    # Test error forwarding via root.after
+    error_boxes = []
+    monkeypatch.setattr(app.messagebox, "showerror", lambda title, msg, **kw: error_boxes.append(msg))
+    app_inst.tiles = [{"name": "Bad Async", "action_type": "unknown_action_xyz", "target": "x", "use_count": 0}]
+
+    thread_err = app_inst.run_tile(0, sync=False)
+    thread_err.join(timeout=2.0)
+    app_inst._process_ui_queue()
+    tk_root.update()
+
+    assert len(error_boxes) == 1
+    assert "unknown action" in error_boxes[0].lower()
+
+
+def test_command_palette_navigation_and_shortcuts(tk_root, tmp_path):
+    """Verify Command Palette 2D navigation (±1, ±current_cols), Return-to-Launch, and Escape handling."""
+    cfg_file = tmp_path / "tiles_palette.json"
+    cfg_data = {
+        "tiles": [
+            {"name": f"Tile {i}", "action_type": "url", "target": f"https://example{i}.com"}
+            for i in range(8)
+        ]
+    }
+    cfg_file.write_text(json.dumps(cfg_data), encoding="utf-8")
+
+    sub_top = tk.Toplevel(tk_root)
+    sub_top.withdraw()
+    old_primary = app.PRIMARY_CONFIG_FILE
+    old_fallback = app.FALLBACK_CONFIG_FILE
+    app.PRIMARY_CONFIG_FILE = cfg_file
+    app.FALLBACK_CONFIG_FILE = tmp_path / "fallback.json"
+    try:
+        tile_app = TileApp(sub_top)
+        tile_app.current_cols = 3
+        tile_app.render_tiles()
+
+        # 1. Automatic selection of first result
+        assert tile_app.selected_tile_idx == 0
+        assert tile_app.rendered_cards[0]["card"].cget("highlightbackground") == "#38bdf8"
+
+        # 2. Horizontal navigation (+1)
+        tile_app._navigate_grid(1)
+        assert tile_app.selected_tile_idx == 1
+
+        tile_app._navigate_grid(-1)
+        assert tile_app.selected_tile_idx == 0
+
+        # Boundary test left (cannot go below 0)
+        tile_app._navigate_grid(-1)
+        assert tile_app.selected_tile_idx == 0
+
+        # 3. Vertical 2D matrix navigation (±current_cols = ±3)
+        tile_app._navigate_grid(3)
+        assert tile_app.selected_tile_idx == 3
+
+        tile_app._navigate_grid(3)
+        assert tile_app.selected_tile_idx == 6
+
+        tile_app._navigate_grid(-3)
+        assert tile_app.selected_tile_idx == 3
+
+        # 4. Return key launches selected tile
+        launched = []
+        tile_app.run_tile = lambda idx: launched.append(idx)
+        tile_app.selected_tile_idx = 4
+        tile_app.on_search_return()
+        assert launched == [4]
+
+        # 5. Escape clears search when query exists
+        tile_app.var_search.set("test query")
+        assert tile_app.var_search.get() == "test query"
+        tile_app.on_search_escape()
+        assert tile_app.var_search.get() == ""
+
+        # Escape iconifies when query is empty
+        iconified = []
+        sub_top.iconify = lambda: iconified.append(True)
+        tile_app.on_search_escape()
+        assert len(iconified) == 1
+    finally:
+        app.PRIMARY_CONFIG_FILE = old_primary
+        app.FALLBACK_CONFIG_FILE = old_fallback
+        sub_top.destroy()
+
+
+
 
 
 
