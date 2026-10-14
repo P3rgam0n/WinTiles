@@ -1713,10 +1713,11 @@ def test_autostart_command_resolution(monkeypatch):
     assert cmd_script.startswith('"')
 
     # Frozen exe mode
+    fake_exe = str(Path("/fake/bin/WinTiles.exe"))
     monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", "/fake/bin/WinTiles.exe")
+    monkeypatch.setattr(sys, "executable", fake_exe)
     cmd_frozen = app.get_autostart_command()
-    assert "/fake/bin/WinTiles.exe" in cmd_frozen
+    assert str(Path(fake_exe).resolve()) in cmd_frozen
 
 
 def test_linux_autostart_file_lifecycle(tmp_path, monkeypatch):
